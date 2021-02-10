@@ -47,7 +47,7 @@ class GaussianProcess(object):
         self._single_kernel = single_kernel
         self._testing = testing
 
-    def generate_curves(self, total_points=400):
+    def generate_curves(self, total_points=100):
         """
         :return: named tuple containing regression dataset
         """

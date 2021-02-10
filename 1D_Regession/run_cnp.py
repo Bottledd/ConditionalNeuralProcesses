@@ -11,11 +11,11 @@ def train(max_iters=int(1e5)):
     gp_train = GaussianProcess(64, 10, testing=False)
     cnp = ConditionalNeuralProcess(128)
     loss = []
-    for i in range(max_iters):
+    for i in range(1, max_iters):
         data_train = gp_train.generate_curves()
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
-        if len(loss) % 1 == 0:
-            print(f"Loss at iteration {i} is: {loss[i]}")
+        if i == 1 or i % 10 == 0:
+            print(f"Loss at iteration {i} is: {loss[i-1]}")
 
     return cnp, loss
 
@@ -28,6 +28,7 @@ def test(cnp, data):
 
 
 if __name__ == "__main__":
+
     cnp, loss = train()
     plt.plot(loss)
     plt.show()
