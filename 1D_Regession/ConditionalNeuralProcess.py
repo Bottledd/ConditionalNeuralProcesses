@@ -35,8 +35,8 @@ class ConditionalNeuralProcess(Model):
         assert targets.dtype == means.dtype
         dist = tfp.distributions.Normal(loc=means, scale=stds)
         log_prob = dist.log_prob(targets)
-        log_prob_per_batch = tf.reduce_mean(log_prob)
-        return -tf.reduce_mean(log_prob_per_batch)
+        #log_prob_per_batch = tf.reduce_mean(log_prob)
+        return -tf.reduce_mean(log_prob)
 
     def train_step(self, inputs, targets):
         with tf.GradientTape() as tape:
@@ -62,7 +62,7 @@ class Encoder(Layer):
 
     def call(self, inputs):
         """
-        Inputs is tuple (x_context, y_context, x_data), each shape [batch_size * num_points]
+        Inputs is tuple (x_context, y_context, x_data), each shape [batch_size , num_points]
         Need to reshape inputs to be pairs of [x_context, y_context],
         Pass through NN,
         Compute a representation by aggregating the outputs.
@@ -74,7 +74,7 @@ class Encoder(Layer):
         # grab shapes
         batch_size, num_context_points = x_context.shape
 
-        # reshape to [batch_size * num_points * 1]
+        # reshape to [batch_size, num_points, 1]
         x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
         y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
 
@@ -102,9 +102,8 @@ class Decoder(keras.layers.Layer):
         super(Decoder, self).__init__()
         self.layer1 = Dense(layer_width, activation='relu')
         self.layer2 = Dense(layer_width, activation='relu')
-        self.layer3 = Dense(layer_width, activation='relu')
         # final layer into mean and log stds
-        self.layer4 = Dense(2, activation=None)
+        self.layer3 = Dense(2, activation=None)
 
     def call(self, representation, inputs):
         """
@@ -130,7 +129,6 @@ class Decoder(keras.layers.Layer):
         h = self.layer1(decoder_input)
         h = self.layer2(h)
         h = self.layer3(h)
-        h = self.layer4(h)
 
         # split into 2 tensors, one with means and one with stds
         # floor the variance to avoid pathological solutions

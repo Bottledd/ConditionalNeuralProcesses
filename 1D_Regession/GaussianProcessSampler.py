@@ -18,14 +18,13 @@ class GaussianProcess(object):
                  max_num_context,
                  x_dim=1,
                  y_dim=1,
-                 l_scale=0.5,
-                 sigma_scale=0.5,
+                 l_scale=0.4,
+                 sigma_scale=1,
                  period=0,
                  single_kernel=True,
                  testing=False):
 
         """
-
         :param batch_size: Integer; num of functions sampled
         :param max_num_context: Integer; max num of observations to train with
         :param x_dim: Integer; dimension of input vector x
@@ -47,16 +46,20 @@ class GaussianProcess(object):
         self._single_kernel = single_kernel
         self._testing = testing
 
-    def generate_curves(self, total_points=100):
+    def generate_curves(self):
         """
         :return: named tuple containing regression dataset
         """
+        if self._testing:
+            total_points = 400
+        else:
+            total_points = 50
 
         x_data = np.zeros(shape=(self._batch_size, total_points))
         y_data = np.zeros(shape=(self._batch_size, total_points))
 
         # sample N ~ uniform(1, max_num_context)
-        num_context_points = np.random.randint(3, self._max_num_context)
+        num_context_points = np.random.randint(1, self._max_num_context)
 
         x_context = np.zeros(shape=(self._batch_size, num_context_points))
         y_context = np.zeros(shape=(self._batch_size, num_context_points))
@@ -76,7 +79,7 @@ class GaussianProcess(object):
                 gp = GP.GaussianProcessRegressor(kernel=kernel)
                 y_data[i, :] = gp.sample_y(x_data[i, :, np.newaxis], random_state=None).flatten()
 
-            else:  # TODO  implement multi kernel
+            else:  # TODO  implement multi-kernel
                 pass
 
             # randomly sample the context vectors
