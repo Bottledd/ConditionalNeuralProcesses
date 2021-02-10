@@ -55,29 +55,29 @@ class GaussianProcess(object):
         else:
             total_points = 50
 
-        x_data = np.zeros(shape=(self._batch_size, total_points))
-        y_data = np.zeros(shape=(self._batch_size, total_points))
+        x_data = np.zeros(shape=(self._batch_size, total_points, 1))
+        y_data = np.zeros(shape=(self._batch_size, total_points, 1))
 
         # sample N ~ uniform(1, max_num_context)
         num_context_points = np.random.randint(1, self._max_num_context)
 
-        x_context = np.zeros(shape=(self._batch_size, num_context_points))
-        y_context = np.zeros(shape=(self._batch_size, num_context_points))
+        x_context = np.zeros(shape=(self._batch_size, num_context_points, 1))
+        y_context = np.zeros(shape=(self._batch_size, num_context_points, 1))
 
         # for each batch need to sample some functions from the GP
         for i in range(self._batch_size):
 
             # if testing want a linspace for xdata - makes plotting nicer
             if self._testing:
-                x_data[i, :] = np.linspace(-2, 2, total_points)
+                x_data[i, :] = np.reshape(np.linspace(-2, 2, total_points), (-1, 1))
             else:
-                x_data[i, :] = np.sort(np.random.uniform(-2, 2, total_points))
+                x_data[i, :] = np.sort(np.random.uniform(-2, 2, size=(total_points, 1)), axis=0)
 
             # sample function from GP
             if self._single_kernel:
                 kernel = GP.kernels.RBF(length_scale=self._l_scale)
                 gp = GP.GaussianProcessRegressor(kernel=kernel)
-                y_data[i, :] = gp.sample_y(x_data[i, :, np.newaxis], random_state=None).flatten()
+                y_data[i, :] = gp.sample_y(x_data[i, :], random_state=None)
 
             else:  # TODO  implement multi-kernel
                 pass
@@ -101,9 +101,9 @@ class GaussianProcess(object):
         :return: y predictions and standard deviations
         """
         kernel = GP.kernels.RBF(length_scale=self._l_scale, length_scale_bounds=(1e-2, 1e3))
-        gp = GP.GaussianProcessRegressor(kernel=kernel).fit(x_context[-1, :, np.newaxis], y_context[-1, :, np.newaxis])
-        y_prediction, y_prediction_std = gp.predict(x_data[-1, :, np.newaxis], return_std=True)
-        return y_prediction, y_prediction_std
+        gp = GP.GaussianProcessRegressor(kernel=kernel).fit(x_context[-1, :], y_context[-1, :])
+        y_prediction, y_prediction_std = gp.predict(x_data[-1, :], return_std=True)
+        return y_prediction[np.newaxis, :], y_prediction_std[np.newaxis, :, np.newaxis]
 
     def plot_fit(self, inputs, targets, y_pred, y_std):
         """
@@ -118,12 +118,19 @@ class GaussianProcess(object):
         """
         x_context, y_context, x_data = inputs
         y_data = targets
+        x_context = np.squeeze(x_context, axis=-1)
+        y_context = np.squeeze(y_context, axis=-1)
+        x_data = np.squeeze(x_data, axis=-1)
+        y_data = np.squeeze(y_data, axis=-1)
+        y_pred = np.squeeze(y_pred, axis=-1)
+        y_std = np.squeeze(y_std, axis=-1)
+
         plt.figure()
         plt.plot(x_data[-1], y_data[-1], 'k--', label='Ground Truth')
         plt.plot(x_context[-1], y_context[-1], 'ko', label='Context')
-        plt.plot(x_data[-1], y_pred.flatten(), 'b-', label='GP Fit')
-        plt.fill_between(x_data[-1], y_pred.flatten() - 1.96 * y_std.flatten(),
-                         y_pred.flatten() + 1.96 * y_std.flatten(),
+        plt.plot(x_data[-1], y_pred[-1], 'b-', label='GP Fit')
+        plt.fill_between(x_data[-1], y_pred[-1] - 1.96 * y_std[-1],
+                         y_pred[-1] + 1.96 * y_std[-1],
                          alpha=0.5, color='b')
 
         # make plots look nice
@@ -135,7 +142,7 @@ class GaussianProcess(object):
 
 
 if __name__ == "__main__":
-    gp_test = GaussianProcess(2,10,testing=False)
+    gp_test = GaussianProcess(10,10,testing=False)
     data_test = gp_test.generate_curves()
     inputs, targets = data_test.Inputs, data_test.Targets
     x_context, y_context, x_data = inputs

@@ -26,11 +26,6 @@ class ConditionalNeuralProcess(Model):
 
     def loss_func(self, means, stds, targets):
         # want distribution of all target points
-        # grab shapes
-        batch_size, num_context_points = targets.shape
-
-        # reshape to [batch_size * num_points * 1]
-        targets = tf.reshape(targets, (batch_size, num_context_points, 1))
         targets = tf.cast(targets, dtype=tf.float32)
         assert targets.dtype == means.dtype
         dist = tfp.distributions.Normal(loc=means, scale=stds)
@@ -71,12 +66,12 @@ class Encoder(Layer):
         # process data for encoder
         x_context, y_context = inputs[0], inputs[1]
 
-        # grab shapes
-        batch_size, num_context_points = x_context.shape
-
-        # reshape to [batch_size, num_points, 1]
-        x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
-        y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
+        # # grab shapes
+        # batch_size, num_context_points = x_context.shape
+        #
+        # # reshape to [batch_size, num_points, 1]
+        # x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
+        # y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
 
         # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, 2]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
@@ -114,15 +109,15 @@ class Decoder(keras.layers.Layer):
 
         # need to concatenate representation to data, so each data set looks like [x_T, representation]
 
-        # need to reshape x_data
-        # grab shapes
-        batch_size, num_context_points = x_data.shape
-
-        # reshape to [batch_size * num_points * 1]
-        x_data = tf.reshape(x_data, (batch_size, num_context_points, 1))
+        # # need to reshape x_data
+        # # grab shapes
+        # batch_size, num_context_points = x_data.shape
+        #
+        # # reshape to [batch_size * num_points * 1]
+        # x_data = tf.reshape(x_data, (batch_size, num_context_points, 1))
 
         # reshape representation vector and repeat it
-        representation = tf.repeat(tf.expand_dims(representation, axis=1), num_context_points, axis=1)
+        representation = tf.repeat(tf.expand_dims(representation, axis=1), x_data.shape[1], axis=1)
         # concatenate representation to inputs
         decoder_input = tf.keras.layers.concatenate([x_data, representation], axis=-1)
 
