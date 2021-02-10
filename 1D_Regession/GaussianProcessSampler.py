@@ -1,7 +1,6 @@
 import numpy as np
 import collections
 import matplotlib.pyplot as plt
-import tensorflow as tf
 import sklearn.gaussian_process as GP
 
 data_description = collections.namedtuple("data_description", ("Inputs",
@@ -103,7 +102,7 @@ class GaussianProcess(object):
         y_prediction, y_prediction_std = gp.predict(x_data[-1, :, np.newaxis], return_std=True)
         return y_prediction, y_prediction_std
 
-    def plot_fit(self, x_data, y_data, x_context, y_context, y_pred, y_std):
+    def plot_fit(self, inputs, targets, y_pred, y_std):
         """
         Plots fit of prediction for final function in batch
         :param x_data: ndarray size '[batch_size, total_points]'
@@ -114,6 +113,8 @@ class GaussianProcess(object):
         :param y_std: array size '[total_points, 1]'
         :return: None
         """
+        x_context, y_context, x_data = inputs
+        y_data = targets
         plt.figure()
         plt.plot(x_data[-1], y_data[-1], 'k--', label='Ground Truth')
         plt.plot(x_context[-1], y_context[-1], 'ko', label='Context')
@@ -137,7 +138,7 @@ if __name__ == "__main__":
     x_context, y_context, x_data = inputs
     y_data = targets
     y_pred, y_std = gp_test.fit_gp(x_context, y_context, x_data)
-    gp_test.plot_fit(x_data, y_data, x_context, y_context, y_pred, y_std)
+    gp_test.plot_fit(inputs, targets, y_pred, y_std)
 
 
 

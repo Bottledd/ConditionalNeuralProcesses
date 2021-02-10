@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Layer
+from tensorflow.keras import Model
 from GaussianProcessSampler import GaussianProcess
 import tensorflow_probability as tfp
 
@@ -10,30 +11,54 @@ import tensorflow_probability as tfp
 # will write class such that it takes in a single [xc, yc] and [xt]
 # to train train on each batch
 # then get new batch and retrain
-class ConditionalNeuralProcess(keras.Model):
-    def __init__(self, node_size_list):
+class ConditionalNeuralProcess(Model):
+    def __init__(self, layer_width):
         super(ConditionalNeuralProcess, self).__init__()
-        self._encoder_num_nodes = node_size_list[0]
-        self._decoder_num_nodes = node_size_list[1]
-        self._encoder = Encoder(self._encoder_num_nodes)
-        self._decoder = Decoder(self._decoder_num_nodes)
+        self._encoder = Encoder(layer_width)
+        self._decoder = Decoder(layer_width)
+        self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
     def call(self, inputs):
         representation = self._encoder(inputs)
-
         means, stds = self._decoder(representation, inputs)
 
         return means, stds
 
+    def loss_func(self, means, stds, targets):
+        # want distribution of all target points
+        # grab shapes
+        batch_size, num_context_points = targets.shape
 
-class Encoder(keras.layers.Layer):
+        # reshape to [batch_size * num_points * 1]
+        targets = tf.reshape(targets, (batch_size, num_context_points, 1))
+        targets = tf.cast(targets, dtype=tf.float32)
+        assert targets.dtype == means.dtype
+        dist = tfp.distributions.Normal(loc=means, scale=stds)
+        log_prob = dist.log_prob(targets)
+        log_prob_per_batch = tf.reduce_mean(log_prob)
+        return -tf.reduce_mean(log_prob_per_batch)
+
+    def train_step(self, inputs, targets):
+        with tf.GradientTape() as tape:
+            means, stds = self(inputs)
+            loss = self.loss_func(means, stds, targets)
+        variables = self.trainable_variables
+        gradients = tape.gradient(loss, variables)
+        self.optimizer.apply_gradients(zip(gradients, variables))
+        return loss
+
+
+class Encoder(Layer):
     """
     The Encoder which is to be shared across all context points.
     Instantiate with list of target number of nodes per layer.
     """
-    def __init__(self, num_nodes):
+    def __init__(self, layer_width):
         super(Encoder, self).__init__()
-        self._num_nodes = num_nodes
+        self.layer1 = Dense(layer_width, activation='relu')
+        self.layer2 = Dense(layer_width, activation='relu')
+        self.layer3 = Dense(layer_width, activation='relu')
+        self.layer4 = Dense(layer_width, activation=None)
 
     def call(self, inputs):
         """
@@ -53,19 +78,16 @@ class Encoder(keras.layers.Layer):
         x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
         y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
 
-        # concatenate to form inputs [x_contect, y_context], overall shape [batch_size, num_context, 2]
+        # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, 2]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
 
-        # build NN and pass inputs through
-        # keras will give a vector of size [batch_size, num_context, final_num_nodes]
-        # go up to penultimate layer
-        for i, node_size in enumerate(self._num_nodes[:-1]):
-            encoder_input = Dense(node_size, activation='relu')(encoder_input)
-        # last layer do not use activation function
-        encoder_input = Dense(self._num_nodes[-1], activation=None)(encoder_input)
+        h = self.layer1(encoder_input)
+        h = self.layer2(h)
+        h = self.layer3(h)
+        h = self.layer4(h)
 
         # now compute representation vector, average across context points, so axis 1
-        representation = tf.reduce_mean(encoder_input, axis=1)
+        representation = tf.reduce_mean(h, axis=1)
 
         return representation
 
@@ -76,9 +98,13 @@ class Decoder(keras.layers.Layer):
     Instantiate with list of target number of nodes per layer.
     For 1D regression need final layer to have 2 units
     """
-    def __init__(self, num_nodes):
+    def __init__(self, layer_width):
         super(Decoder, self).__init__()
-        self._num_nodes = num_nodes
+        self.layer1 = Dense(layer_width, activation='relu')
+        self.layer2 = Dense(layer_width, activation='relu')
+        self.layer3 = Dense(layer_width, activation='relu')
+        # final layer into mean and log stds
+        self.layer4 = Dense(2, activation=None)
 
     def call(self, representation, inputs):
         """
@@ -96,40 +122,42 @@ class Decoder(keras.layers.Layer):
         # reshape to [batch_size * num_points * 1]
         x_data = tf.reshape(x_data, (batch_size, num_context_points, 1))
 
+        # reshape representation vector and repeat it
+        representation = tf.repeat(tf.expand_dims(representation, axis=1), num_context_points, axis=1)
         # concatenate representation to inputs
-        decoder_input = tf.concat([x_data, representation], axis=-1)
+        decoder_input = tf.keras.layers.concatenate([x_data, representation], axis=-1)
 
-        # build NN and pass inputs
-        for i, node_size in enumerate(self._num_nodes)[:-1]:
-            decoder_input = Dense(node_size, activation='relu')(decoder_input)
-        decoder_input = Dense(self._num_nodes[-1])(decoder_input)
+        h = self.layer1(decoder_input)
+        h = self.layer2(h)
+        h = self.layer3(h)
+        h = self.layer4(h)
 
         # split into 2 tensors, one with means and one with stds
         # floor the variance to avoid pathological solutions
-        means, log_stds = tf.split(decoder_input, 2, axis=-1)
+        means, log_stds = tf.split(h, 2, axis=-1)
         stds = 0.1 + 0.9 * tf.nn.softplus(log_stds)
 
         return means, stds
 
 
-def loss_func(means, stds, targets):
-    dist = tfp.distributions.MultivariateNormalDiag(loc=means, scale_diag=stds)
-    log_prob = dist.log_prob(targets)
-    return -tf.reduce_mean(log_prob)
-
-
-def training_data_generator(batch_size = 1, testing=False):
-    while True:
-        gp = GaussianProcess(batch_size=batch_size, max_num_context=10, testing=testing)
-        data = gp.generate_curves()
-        yield data
-
-
 if __name__ == "__main__":
     # gps
-    gp_test = GaussianProcess(2, 10, testing=False)
+    gp_test = GaussianProcess(100, 10, testing=False)
     data = gp_test.generate_curves()
     # model output sizes
-    output_sizes = [[128,128,128,128], [128,128,2]]
-    model = ConditionalNeuralProcess(node_size_list=output_sizes)
+    enc = Encoder(128)
+    reps = enc((data.Inputs[0], data.Inputs[1]))
+    masked_x = np.zeros(shape=data.Inputs[0].shape)
+    masked_x[1:] = data.Inputs[0][1:]
+    masked_y = np.zeros(shape=data.Inputs[1].shape)
+    masked_y[1:] = data.Inputs[1][1:]
+    masked_data = masked_x, masked_y
+    reps_masked = enc((masked_x, masked_y))
+    assert np.all(reps.numpy()[2, :] == reps_masked.numpy()[2, :])
+
+    dec = Decoder(128)
+    means, stds = dec(reps, data.Inputs)
+
+    model = ConditionalNeuralProcess(layer_width=128)
     model(inputs=data.Inputs)
+    model.summary()
