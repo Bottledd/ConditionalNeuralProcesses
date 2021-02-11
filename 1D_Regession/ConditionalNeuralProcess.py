@@ -28,6 +28,7 @@ class ConditionalNeuralProcess(Model):
         # want distribution of all target points
         targets = tf.cast(targets, dtype=tf.float32)
         assert targets.dtype == means.dtype
+        # TODO change to multivariate for images
         dist = tfp.distributions.Normal(loc=means, scale=stds)
         log_prob = dist.log_prob(targets)
         #log_prob_per_batch = tf.reduce_mean(log_prob)
@@ -57,7 +58,7 @@ class Encoder(Layer):
 
     def call(self, inputs):
         """
-        Inputs is tuple (x_context, y_context, x_data), each shape [batch_size , num_points]
+        Inputs is tuple (x_context, y_context, x_data), each shape [batch_size , num_points, dimension]
         Need to reshape inputs to be pairs of [x_context, y_context],
         Pass through NN,
         Compute a representation by aggregating the outputs.
@@ -128,7 +129,9 @@ class Decoder(keras.layers.Layer):
         # split into 2 tensors, one with means and one with stds
         # floor the variance to avoid pathological solutions
         means, log_stds = tf.split(h, 2, axis=-1)
-        stds = 0.1 + 0.9 * tf.nn.softplus(log_stds)
+        stds = 0.01 + 0.99 * tf.nn.softplus(log_stds)
+        #stds = tf.nn.softplus(log_stds)
+
 
         return means, stds
 
