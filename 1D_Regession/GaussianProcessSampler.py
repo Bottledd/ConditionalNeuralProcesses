@@ -55,14 +55,14 @@ class GaussianProcess(object):
         else:
             total_points = 50
 
-        x_data = np.zeros(shape=(self._batch_size, total_points, 1))
-        y_data = np.zeros(shape=(self._batch_size, total_points, 1))
+        x_data = np.zeros(shape=(self._batch_size, total_points, 1), dtype=np.float32)
+        y_data = np.zeros(shape=(self._batch_size, total_points, 1), dtype=np.float32)
 
         # sample N ~ uniform(1, max_num_context)
-        num_context_points = np.random.randint(1, self._max_num_context)
+        num_context_points = np.random.randint(1, self._max_num_context+1)
 
-        x_context = np.zeros(shape=(self._batch_size, num_context_points, 1))
-        y_context = np.zeros(shape=(self._batch_size, num_context_points, 1))
+        x_context = np.zeros(shape=(self._batch_size, num_context_points, 1), dtype=np.float32)
+        y_context = np.zeros(shape=(self._batch_size, num_context_points, 1), dtype=np.float32)
 
         # for each batch need to sample some functions from the GP
         for i in range(self._batch_size):
@@ -132,6 +132,9 @@ class GaussianProcess(object):
         plt.fill_between(x_data[-1], y_pred[-1] - 1.96 * y_std[-1],
                          y_pred[-1] + 1.96 * y_std[-1],
                          alpha=0.5, color='b')
+        # plt.fill_between(x_data[-1], y_pred[-1] - 1 * y_std[-1],
+        #                  y_pred[-1] + 1 * y_std[-1],
+        #                  alpha=0.5, color='b')
 
         # make plots look nice
         plt.xticks(np.arange(-2, 3))

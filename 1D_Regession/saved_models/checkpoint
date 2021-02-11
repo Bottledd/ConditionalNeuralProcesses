@@ -1,2 +1,0 @@
-model_checkpoint_path: "low_var"
-all_model_checkpoint_paths: "low_var"

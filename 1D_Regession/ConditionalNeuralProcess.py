@@ -26,12 +26,8 @@ class ConditionalNeuralProcess(Model):
 
     def loss_func(self, means, stds, targets):
         # want distribution of all target points
-        targets = tf.cast(targets, dtype=tf.float32)
-        assert targets.dtype == means.dtype
-        # TODO change to multivariate for images
-        dist = tfp.distributions.Normal(loc=means, scale=stds)
+        dist = tfp.distributions.MultivariateNormalDiag(loc=means, scale_diag=stds)
         log_prob = dist.log_prob(targets)
-        #log_prob_per_batch = tf.reduce_mean(log_prob)
         return -tf.reduce_mean(log_prob)
 
     def train_step(self, inputs, targets):
