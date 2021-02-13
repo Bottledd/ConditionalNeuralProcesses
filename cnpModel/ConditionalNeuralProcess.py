@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Dense, Layer
 from tensorflow.keras import Model
-from GaussianProcessSampler import GaussianProcess
+from GaussianProcesses.GaussianProcessSampler import GaussianProcess
 import tensorflow_probability as tfp
 
 
@@ -47,10 +47,16 @@ class Encoder(Layer):
     """
     def __init__(self, layer_width):
         super(Encoder, self).__init__()
-        self.layer1 = Dense(layer_width, activation='relu')
-        self.layer2 = Dense(layer_width, activation='relu')
-        self.layer3 = Dense(layer_width, activation='relu')
-        self.layer4 = Dense(layer_width, activation=None)
+        self.h1 = Dense(layer_width, activation='relu')
+        self.h2 = Dense(layer_width, activation='relu')
+        self.h3 = Dense(layer_width, activation=None)
+
+    def h_func(self, x):
+        x = self.h1(x)
+        x = self.h2(x)
+        x = self.h3(x)
+
+        return x
 
     def call(self, inputs):
         """
@@ -73,13 +79,10 @@ class Encoder(Layer):
         # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, 2]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
 
-        h = self.layer1(encoder_input)
-        h = self.layer2(h)
-        h = self.layer3(h)
-        h = self.layer4(h)
+        encoder_ouput = self.h_func(encoder_input)
 
         # now compute representation vector, average across context points, so axis 1
-        representation = tf.reduce_mean(h, axis=1)
+        representation = tf.reduce_mean(encoder_ouput, axis=1)
 
         return representation
 
@@ -92,10 +95,22 @@ class Decoder(keras.layers.Layer):
     """
     def __init__(self, layer_width):
         super(Decoder, self).__init__()
-        self.layer1 = Dense(layer_width, activation='relu')
-        self.layer2 = Dense(layer_width, activation='relu')
+        self.g1 = Dense(layer_width, activation='relu')
+        self.g2 = Dense(layer_width, activation='relu')
+        self.g3 = Dense(layer_width, activation='relu')
+        self.g4 = Dense(layer_width, activation='relu')
         # final layer into mean and log stds
-        self.layer3 = Dense(2, activation=None)
+        self.g5 = Dense(2, activation=None)
+
+    def g_func(self, x):
+
+        x = self.g1(x)
+        x = self.g2(x)
+        x = self.g3(x)
+        x = self.g4(x)
+        x = self.g5(x)
+
+        return x
 
     def call(self, representation, inputs):
         """
@@ -118,16 +133,13 @@ class Decoder(keras.layers.Layer):
         # concatenate representation to inputs
         decoder_input = tf.keras.layers.concatenate([x_data, representation], axis=-1)
 
-        h = self.layer1(decoder_input)
-        h = self.layer2(h)
-        h = self.layer3(h)
+        decoder_output = self.g_func(decoder_input)
 
         # split into 2 tensors, one with means and one with stds
         # floor the variance to avoid pathological solutions
-        means, log_stds = tf.split(h, 2, axis=-1)
+        means, log_stds = tf.split(decoder_output, 2, axis=-1)
         stds = 0.01 + 0.99 * tf.nn.softplus(log_stds)
         #stds = tf.nn.softplus(log_stds)
-
 
         return means, stds
 

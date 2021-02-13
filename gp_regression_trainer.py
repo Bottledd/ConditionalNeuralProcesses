@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
-import collections
 import matplotlib.pyplot as plt
-from GaussianProcessSampler import GaussianProcess
-from ConditionalNeuralProcess import ConditionalNeuralProcess
+from GaussianProcesses.GaussianProcessSampler import GaussianProcess
+from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 import tensorflow as tf
 import os
 import time
