@@ -11,7 +11,7 @@ def process_images(image_set, context_points=100):
     :param image_set: Set of images needing processing
     :return: Named tuple containing inputs and targets.
              The x_data is a list of coordinate pairs [x1, x2].
-             The y_data is a list of pixel intensities [yT]
+             The y_data is a list of RGB pixel intensities yT = [R, G, B]
     """
     # grab shapes
     batch_size = image_set.shape[0]
@@ -57,15 +57,6 @@ def process_images(image_set, context_points=100):
 
 def sample_context_points(arr, pixel_width, context_points):
     return np.random.choice(np.arange(pixel_width**2, dtype=np.int32), size=context_points, replace=False)
-
-
-def plot_context_points(inputs):
-    x_context, y_context = inputs[0], inputs[1]
-
-    image = np.zeros((28, 28))
-
-    
-
 
 if __name__ == '__main__':
     (train_set, _), (test_set, _) = tf.keras.datasets.mnist.load_data(

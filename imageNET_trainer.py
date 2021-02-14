@@ -10,26 +10,28 @@ from Utils.imageProcessor import process_images
 from tqdm import tqdm
 
 
-def train(cnp, data, max_iters=25000):
+def train(cnp, data, batch_size=64, max_iters=50000):
     """
     Train with batches of size 30 since 60000 images total, 4000 iterations
     Randomly sample number of context  points
     """
     # tf.config.run_functions_eagerly(True)
     loss = []
-    start = time.perf_counter()
+    #start = time.perf_counter()
 
-    for i in range(1, max_iters+1):
+    for i in tqdm(range(1, max_iters+1)):
         #choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
-        num_context = np.random.randint(3, 784)
-        # grab image batch
-        batch = data[(i-1)*64 % 60000: i*64 % 60000, :]
+        num_context = np.random.randint(2, 784)
+        # grab random image batch
+        rand_batch = np.random.choice(np.arange(data.shape[0]), replace=False, size=batch_size)
+        batch = data[rand_batch, :]
+
         data_train = process_images(batch, context_points=num_context)
 
         # process current batch
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
-        if i % 1 == 0:
-            print(f'The loss at iteration {i} is: {loss[i-1]}')
+        if i % 1000 == 0:
+            print(f'The running avg loss at iteration {i} is: {np.mean(loss[-1000:])}')
 
         # every 1000 iterations try new max contexts with big batch size to avoid overfitting
         # if i % 1000 == 0:
@@ -45,38 +47,41 @@ def train(cnp, data, max_iters=25000):
         #     if np.mean(loss[-2000:-1000]) - np.mean(loss[-1000:]) < 0:
         #         break
 
-    end = time.perf_counter()
+    # end = time.perf_counter()
     return cnp, loss, end-start
 
 
 def test_cnp(cnp, test_data):
     # grab a random image from the test set
-    image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1,28,28)
+    image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1, 28, 28)
 
     # process image
-    processed = process_images(image, context_points=781)
+    processed = process_images(image, context_points=40)
 
     # evaluate cnp on image
     means , stds = cnp(processed.Inputs)
 
     # reshape for plotting
-    predictive_mean = tf.reshape(means, (28,28))
+    predictive_mean = tf.reshape(means, (28, 28))
     predictive_stds = tf.reshape(stds, (28, 28))
 
     # plot stuff
     plt.figure('means')
-    plt.matshow(predictive_mean)
+    plt.imshow(predictive_mean, cmap='gray')
     plt.title('Predictive Mean')
+    plt.tight_layout()
     plt.show()
 
     plt.figure('stds')
-    plt.matshow(predictive_stds)
+    plt.imshow(predictive_stds, cmap='gray')
     plt.title('Predictive Std')
+    plt.tight_layout()
     plt.show()
 
     plt.figure('actual')
-    plt.matshow(processed.Targets.reshape(28,28))
+    plt.imshow(processed.Targets.reshape(28, 28), cmap='gray')
     plt.title('Actual')
+    plt.tight_layout()
     plt.show()
 
 
@@ -84,11 +89,11 @@ if __name__ == "__main__":
     (train_data, _), (test_data, _) = tf.keras.datasets.mnist.load_data(
         path='mnist.npz'
     )
-    load = False
+    load = True
     save = True
     training = True
-    test = True
-    loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_13-09_52_23_AM/")
+    test = False
+    loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_14-12_45_56_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/ImageNET/")
     cnp = ConditionalNeuralProcess(128)
     if load:

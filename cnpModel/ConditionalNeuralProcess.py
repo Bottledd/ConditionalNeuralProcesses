@@ -28,7 +28,8 @@ class ConditionalNeuralProcess(Model):
         # want distribution of all target points
         dist = tfp.distributions.MultivariateNormalDiag(loc=means, scale_diag=stds)
         log_prob = dist.log_prob(targets)
-        return -tf.reduce_mean(log_prob)
+        avg_batch_loss = tf.reduce_mean(log_prob, axis=1)
+        return -tf.reduce_mean(avg_batch_loss)
 
     def train_step(self, inputs, targets):
         with tf.GradientTape() as tape:
@@ -76,7 +77,7 @@ class Encoder(Layer):
         # x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
         # y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
 
-        # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, 2]
+        # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, dim_x + dim_y]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
 
         encoder_ouput = self.h_func(encoder_input)
