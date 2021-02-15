@@ -1,13 +1,14 @@
+import os
+from datetime import datetime
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 import tensorflow as tf
-import os
-import time
-from datetime import datetime
-from Utils.imageProcessor import process_images
 from tqdm import tqdm
+
+from Utils.imageProcessor import process_images, format_context_points_image
+from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 
 
 def train(cnp, data, batch_size=64, max_iters=50000):
@@ -48,24 +49,31 @@ def train(cnp, data, batch_size=64, max_iters=50000):
         #         break
 
     # end = time.perf_counter()
-    return cnp, loss, end-start
+    return cnp, loss
 
 
-def test_cnp(cnp, test_data):
+def test_cnp(cnp, test_data, context_points=100):
     # grab a random image from the test set
     image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1, 28, 28)
 
     # process image
-    processed = process_images(image, context_points=40)
+    processed = process_images(image, context_points=context_points)
 
     # evaluate cnp on image
-    means , stds = cnp(processed.Inputs)
+    means, stds = cnp(processed.Inputs)
 
     # reshape for plotting
     predictive_mean = tf.reshape(means, (28, 28))
     predictive_stds = tf.reshape(stds, (28, 28))
 
     # plot stuff
+    plt.figure('context')
+    image = format_context_points_image(processed.Inputs)
+    plt.imshow(image)
+    plt.title('Context')
+    plt.tight_layout()
+    plt.show()
+
     plt.figure('means')
     plt.imshow(predictive_mean, cmap='gray')
     plt.title('Predictive Mean')
@@ -99,7 +107,7 @@ if __name__ == "__main__":
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data)
+        cnp, loss = train(cnp, train_data)
         print(total_runtime)
         avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         plt.figure('loss')

@@ -92,7 +92,7 @@ class GaussianProcess(object):
         return data_description(Inputs=inputs,
                                 Targets=targets)
 
-    def fit_gp(self, x_context, y_context, x_data):
+    def fit_gp(self, inputs):
         """
         Fits a GP to the final sample from the batch to compare with CNP fit
         :param x_context: ndarray size '[batch_size, num_context_points]'
@@ -100,6 +100,7 @@ class GaussianProcess(object):
         :param x_data: ndarray size '[batch_size, total_points]'
         :return: y predictions and standard deviations
         """
+        x_context, y_context, x_data = inputs
         kernel = GP.kernels.RBF(length_scale=self._l_scale, length_scale_bounds=(1e-2, 1e3))
         gp = GP.GaussianProcessRegressor(kernel=kernel).fit(x_context[-1, :], y_context[-1, :])
         y_prediction, y_prediction_std = gp.predict(x_data[-1, :], return_std=True)
@@ -138,6 +139,7 @@ class GaussianProcess(object):
 
         # make plots look nice
         plt.xticks(np.arange(-2, 3))
+        plt.yticks(np.arange(-2, 3))
         plt.ylabel('y')
         plt.xlabel('x')
         plt.tight_layout()
