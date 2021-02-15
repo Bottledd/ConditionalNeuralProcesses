@@ -11,7 +11,7 @@ from Utils.imageProcessor import process_images, format_context_points_image
 from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 
 
-def train(cnp, data, batch_size=64, max_iters=150000):
+def train(cnp, data, batch_size=64, max_iters=500000):
     """
     Train with batches of size 30 since 60000 images total, 4000 iterations
     Randomly sample number of context  points
@@ -31,8 +31,8 @@ def train(cnp, data, batch_size=64, max_iters=150000):
 
         # process current batch
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
-        if i % 1000 == 0:
-            print(f'The running avg loss at iteration {i} is: {np.mean(loss[-1000:])}')
+        if i % 10000 == 0:
+            print(f'The running avg loss at iteration {i} is: {np.mean(loss[-10000:])}')
 
         # every 1000 iterations try new max contexts with big batch size to avoid overfitting
         # if i % 1000 == 0:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     save = True
     training = True
     test = False
-    loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_14-12_45_56_PM/")
+    loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_15-07_25_31_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/ImageNET/")
     cnp = ConditionalNeuralProcess(128)
     if load:

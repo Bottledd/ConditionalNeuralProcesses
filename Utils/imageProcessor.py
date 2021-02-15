@@ -63,16 +63,16 @@ def format_context_points_image(inputs):
     x_context, y_context = inputs[0], inputs[1]
 
     x_context = (x_context * 27).astype(np.int32)
-    y_context = y_context * 255
+    y_context = (y_context * 255).astype(np.int32)
 
-    image = np.zeros((28, 28, 3))
+    image = np.zeros((28, 28, 3), dtype=np.int32)
     image[:, :, 2] = 255
 
     for x, y in zip(x_context[0], y_context[0]):
         if y == 0:
             image[x[0], x[1]] = [0, 0, 0]
         else:
-            image[x[0], x[1]] = [255, 255, 255]
+            image[x[0], x[1]] = [y, y, y]
 
     return image
 

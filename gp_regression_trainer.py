@@ -10,7 +10,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-def train(cnp, batch_size=64, max_iters=100000):
+def train(cnp, batch_size=64, max_iters=500000):
     # tf.config.run_functions_eagerly(True)
     default_max_context = np.random.randint(3, 400)
     gp_train = GaussianProcess(batch_size, default_max_context, testing=False)
@@ -25,10 +25,10 @@ def train(cnp, batch_size=64, max_iters=100000):
 
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
         # every 1000 iterations try new max contexts with big batch size to avoid overfitting
-        if i % 1000 == 0:
+        if i % 10000 == 0:
             # data_val = generate_gp_samples(gp_train, gen_new_gp=True)
             # val_loss = cnp.train_step(data_val.Inputs, data_val.Targets)
-            print(f"Running avg (1000) loss at iteration {i} is: {np.mean(loss[-1000:])}")
+            print(f"Running avg (10000) loss at iteration {i} is: {np.mean(loss[-10000:])}")
             # print(f"Validation Loss at iteration {i} is: {val_loss}")
 
         # # early stopping
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     save = True
     training = True
     Testing = False
-    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-06_11_31_PM/")
+    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-07_54_37_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/long_colab_run/")
     cnp = ConditionalNeuralProcess(128)
     if load:
