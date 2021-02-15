@@ -6,19 +6,19 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tqdm import tqdm
-
+import time
 from Utils.imageProcessor import process_images, format_context_points_image
 from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 
 
-def train(cnp, data, batch_size=64, max_iters=50000):
+def train(cnp, data, batch_size=64, max_iters=150000):
     """
     Train with batches of size 30 since 60000 images total, 4000 iterations
     Randomly sample number of context  points
     """
     # tf.config.run_functions_eagerly(True)
     loss = []
-    #start = time.perf_counter()
+    start = time.perf_counter()
 
     for i in tqdm(range(1, max_iters+1)):
         #choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
@@ -48,8 +48,8 @@ def train(cnp, data, batch_size=64, max_iters=50000):
         #     if np.mean(loss[-2000:-1000]) - np.mean(loss[-1000:]) < 0:
         #         break
 
-    # end = time.perf_counter()
-    return cnp, loss
+    end = time.perf_counter()
+    return cnp, loss, start-end
 
 
 def test_cnp(cnp, test_data, context_points=100):
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss = train(cnp, train_data)
+        cnp, loss, total_runtime = train(cnp, train_data)
         print(total_runtime)
         avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         plt.figure('loss')

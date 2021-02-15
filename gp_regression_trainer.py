@@ -10,8 +10,9 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-def train(cnp, batch_size=64, default_max_context=10, max_iters=100000):
+def train(cnp, batch_size=64, max_iters=100000):
     # tf.config.run_functions_eagerly(True)
+    default_max_context = np.random.randint(3, 400)
     gp_train = GaussianProcess(batch_size, default_max_context, testing=False)
     loss = []
     start = time.perf_counter()
@@ -49,9 +50,10 @@ def generate_gp_samples(gp_object, gen_new_gp=False):
 
 if __name__ == "__main__":
     load = True
-    save = False
-    training = False
-    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-06_35_14_AM/")
+    save = True
+    training = True
+    Testing = False
+    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-06_11_31_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/long_colab_run/")
     cnp = ConditionalNeuralProcess(128)
     if load:
@@ -67,10 +69,10 @@ if __name__ == "__main__":
         current_time = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
         cnp.save_weights("saved_models/GP_Regression/" + current_time + "/", overwrite=False)
         # cnp.save_weights(saving_path)
-
-    gp = GaussianProcess(1, 7, testing=True)
-    data = gp.generate_curves()
-    means, stds = cnp(data.Inputs)
-    gp_mean, gp_stds = gp.fit_gp(data.Inputs)
-    gp.plot_fit(data.Inputs, data.Targets, means.numpy(), stds.numpy())
-    gp.plot_fit(data.Inputs, data.Targets, gp_mean, gp_stds)
+    if Testing:
+        gp = GaussianProcess(1, 7, testing=True)
+        data = gp.generate_curves()
+        means, stds = cnp(data.Inputs)
+        gp_mean, gp_stds = gp.fit_gp(data.Inputs)
+        gp.plot_fit(data.Inputs, data.Targets, means.numpy(), stds.numpy())
+        gp.plot_fit(data.Inputs, data.Targets, gp_mean, gp_stds)
