@@ -21,7 +21,7 @@ def process_images(image_set, context_points=100):
     image_set = image_set / 255.0
 
     # flatten image into vector (this is the full y data)
-    image_set = np.reshape(image_set, (-1, pixel_width**2, 1))
+    image_set = np.reshape(image_set, (-1, pixel_width**2, 3))
 
     # create shell containing indices (this is the full x data)
     # first make mask containing indices
