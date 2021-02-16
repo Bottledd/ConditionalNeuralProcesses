@@ -12,10 +12,10 @@ import tensorflow_probability as tfp
 # to train train on each batch
 # then get new batch and retrain
 class ConditionalNeuralProcess(Model):
-    def __init__(self, layer_width):
+    def __init__(self, layer_width, output_channels = 1):
         super(ConditionalNeuralProcess, self).__init__()
         self._encoder = Encoder(layer_width)
-        self._decoder = Decoder(layer_width)
+        self._decoder = Decoder(layer_width, output_channels)
         self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
     def call(self, inputs):
@@ -94,14 +94,14 @@ class Decoder(keras.layers.Layer):
     Instantiate with list of target number of nodes per layer.
     For 1D regression need final layer to have 2 units
     """
-    def __init__(self, layer_width):
+    def __init__(self, layer_width, output_channels):
         super(Decoder, self).__init__()
         self.g1 = Dense(layer_width, activation='relu')
         self.g2 = Dense(layer_width, activation='relu')
         self.g3 = Dense(layer_width, activation='relu')
         self.g4 = Dense(layer_width, activation='relu')
         # final layer into mean and log stds
-        self.g5 = Dense(2, activation=None)
+        self.g5 = Dense(2 * output_channels, activation=None)
 
     def g_func(self, x):
 
