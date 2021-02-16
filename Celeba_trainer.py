@@ -7,10 +7,11 @@ import tensorflow_datasets as tfds
 import os
 import time
 from datetime import datetime
-from Utils.celebaProcessor import process_images
+from Utils.celebaProcessor import process_images, format_context_points_image
 from tqdm import tqdm
 
-def data_generator(directory, type_data, batch_size=64, target_size=(28,28)):
+
+def data_generator(directory, type_data, batch_size=64, target_size=(28, 28)):
     datagen = tf.keras.preprocessing.image.ImageDataGenerator()
     generator = datagen.flow_from_directory(directory,batch_size=batch_size, target_size=target_size, shuffle = True, classes=[type_data])
     while True:
@@ -67,11 +68,19 @@ def test_cnp(cnp, test_data):
     processed = process_images(batch, context_points=40)
 
     # evaluate cnp on image
-    means , stds = cnp(processed.Inputs)
+    means, stds = cnp(processed.Inputs)
 
     # reshape for plotting
     predictive_mean = tf.reshape(means, img_shape)
     predictive_stds = tf.reshape(stds, img_shape)
+    context_image = format_context_points_image(processed.Inputs)
+
+    # plot stuff
+    plt.figure('context')
+    plt.imshow(context_image, cmap='gray')
+    plt.title('Context')
+    plt.tight_layout()
+    plt.show()
 
     # plot stuff
     plt.figure('means')
@@ -100,23 +109,22 @@ if __name__ == "__main__":
     test = True
     loading_path = os.path.join(os.getcwd(), "saved_models/Celeba/2021_02_14-12_45_56_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/Celeba/")
-    cnp = ConditionalNeuralProcess(128,3)
+    cnp = ConditionalNeuralProcess(128, 3)
 
     #make a generator for the data
-    train_data = data_generator('data/celeba', 'train', batch_size = 64)
-    test_data = data_generator('data/celeba', 'test', batch_size = 1)
+    train_data = data_generator('data/celeba', 'train', batch_size=64)
+    test_data = data_generator('data/celeba', 'test', batch_size=1)
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data, max_iters=1000)
+        cnp, loss, total_runtime = train(cnp, train_data, max_iters=2)
         print(total_runtime)
-        avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
-        plt.figure('loss')
-        plt.plot(avg_loss)
-        plt.show()
+        # avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
+        # plt.figure('loss')
+        # plt.plot(avg_loss)
+        # plt.show()
     if save:
         current_time = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
         cnp.save_weights("saved_models/Celeba/" + current_time + "/", overwrite=False)
-
     if test:
         test_cnp(cnp, test_data)

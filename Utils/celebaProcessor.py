@@ -45,10 +45,10 @@ def process_images(image_set, context_points=100):
     y_context = image_set[np.arange(batch_size).reshape(-1, 1), context_indices]
 
     # normalise all vectors so values in [0,1]
-    x_context = x_context / 27.0
-    image_set_idxs = image_set_idxs / 27.0
+    x_context = x_context / (pixel_width - 1)
+    image_set_idxs = image_set_idxs / (pixel_width - 1)
 
-    inputs = (x_context, y_context, image_set_idxs)
+    inputs = (x_context.astype("float32"), y_context, image_set_idxs.astype("float32"))
     targets = image_set
 
     return data_description(Inputs=inputs,
@@ -57,6 +57,22 @@ def process_images(image_set, context_points=100):
 
 def sample_context_points(arr, pixel_width, context_points):
     return np.random.choice(np.arange(pixel_width**2, dtype=np.int32), size=context_points, replace=False)
+
+
+def format_context_points_image(inputs):
+    x_context, y_context, x_data = inputs[0], inputs[1], inputs[2]
+    pixel_count = np.sqrt(x_data.shape[1]).astype("int32")
+    x_context = (x_context * (pixel_count - 1)).astype(np.int32)
+    y_context = (y_context * 255).astype(np.int32)
+
+    image = np.zeros((pixel_count, pixel_count, 3), dtype=np.int32)
+    image[:, :, 2] = 255
+
+    for x, y in zip(x_context[0], y_context[0]):
+        image[x[0], x[1]] = y
+
+    return image
+
 
 if __name__ == '__main__':
     (train_set, _), (test_set, _) = tf.keras.datasets.mnist.load_data(

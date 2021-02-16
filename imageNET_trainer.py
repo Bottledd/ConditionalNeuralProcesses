@@ -21,7 +21,7 @@ def train(cnp, data, batch_size=64, max_iters=500000):
     start = time.perf_counter()
 
     for i in tqdm(range(1, max_iters+1)):
-        #choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
+        # choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
         num_context = np.random.randint(2, 784)
         # grab random image batch
         rand_batch = np.random.choice(np.arange(data.shape[0]), replace=False, size=batch_size)
@@ -49,7 +49,7 @@ def train(cnp, data, batch_size=64, max_iters=500000):
         #         break
 
     end = time.perf_counter()
-    return cnp, loss, start-end
+    return cnp, loss, end-start
 
 
 def test_cnp(cnp, test_data, context_points=100):
