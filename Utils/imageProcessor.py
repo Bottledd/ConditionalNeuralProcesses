@@ -38,7 +38,8 @@ def process_images(image_set, context_points=100):
 
     # choose context points
     for i in range(batch_size):
-        context_indices[i, :] = np.random.choice(np.arange(784, dtype=np.int32), size=context_points, replace=False)
+        context_indices[i, :] = np.random.choice(np.arange(pixel_width**2,
+                                                           dtype=np.int32), size=context_points, replace=False)
 
     x_context = image_set_idxs[np.arange(batch_size).reshape(-1, 1), context_indices]
 

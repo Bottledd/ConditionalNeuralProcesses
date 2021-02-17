@@ -5,8 +5,7 @@
       <paths name="km817@localhost:6000">
         <serverdata>
           <mappings>
-            <mapping deploy="/homes/km817/MLMI4" local="$PROJECT_DIR$" web="/" />
-            <mapping deploy="" local="" />
+            <mapping deploy="/homes/km817/CNP/ConditionalNeuralProcesses" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

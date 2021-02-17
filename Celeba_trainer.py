@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 import tensorflow as tf
-import tensorflow_datasets as tfds
 import os
 import time
 from datetime import datetime
@@ -13,7 +12,8 @@ from tqdm import tqdm
 
 def data_generator(directory, type_data, batch_size=64, target_size=(28, 28)):
     datagen = tf.keras.preprocessing.image.ImageDataGenerator()
-    generator = datagen.flow_from_directory(directory,batch_size=batch_size, target_size=target_size, shuffle = True, classes=[type_data])
+    generator = datagen.flow_from_directory(directory, batch_size=batch_size,
+                                            target_size=target_size, shuffle=True, classes=[type_data])
     while True:
         batch = next(generator)
         yield batch
@@ -59,13 +59,13 @@ def train(cnp, train_data, batch_size=64, max_iters=50000):
     return cnp, loss, end-start
 
 
-def test_cnp(cnp, test_data):
+def test_cnp(cnp, test_data, context_ratio=0.2):
     # grab a random image from the test set
     batch = next(test_data)[0]
     img_shape = np.array(batch).shape[1:]
 
     # process image
-    processed = process_images(batch, context_points=40)
+    processed = process_images(batch, context_points=int(0.2*img_shape[0]))
 
     # evaluate cnp on image
     means, stds = cnp(processed.Inputs)
@@ -96,28 +96,30 @@ def test_cnp(cnp, test_data):
     plt.show()
 
     plt.figure('actual')
-    plt.imshow(processed.Targets.reshape(img_shape[0],img_shape[1],img_shape[2]), cmap='gray')
+    plt.imshow(processed.Targets.reshape(img_shape[0], img_shape[1], img_shape[2]), cmap='gray')
     plt.title('Actual')
     plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
-    load = False
+    load = True
     save = False
-    training = True
+    training = False
     test = True
-    loading_path = os.path.join(os.getcwd(), "saved_models/Celeba/2021_02_14-12_45_56_PM/")
-    saving_path = os.path.join(os.getcwd(), "saved_models/Celeba/")
+    loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/2021_02_16-06_59_35_PM/")
+    saving_path = os.path.join(os.getcwd(), "saved_models/CelebA/")
     cnp = ConditionalNeuralProcess(128, 3)
 
-    #make a generator for the data
-    train_data = data_generator('data/celeba', 'train', batch_size=64)
-    test_data = data_generator('data/celeba', 'test', batch_size=1)
+    # make a generator for the data
+    train_data = data_generator('DataSets/CelebA', 'train', batch_size=64, target_size=(128, 128))
+    train_data = data_generator('DataSets/CelebA', 'test', batch_size=1, target_size=(128, 128))
+    # test_data = data_generator('img_align_celeba', '',  batch_size=1, target_size=(128, 128))
+
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data, max_iters=2)
+        cnp, loss, total_runtime = train(cnp, train_data, max_iters=50000)
         print(total_runtime)
         # avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         # plt.figure('loss')
@@ -125,6 +127,6 @@ if __name__ == "__main__":
         # plt.show()
     if save:
         current_time = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
-        cnp.save_weights("saved_models/Celeba/" + current_time + "/", overwrite=False)
+        cnp.save_weights("saved_models/CelebA/" + current_time + "/", overwrite=False)
     if test:
         test_cnp(cnp, test_data)

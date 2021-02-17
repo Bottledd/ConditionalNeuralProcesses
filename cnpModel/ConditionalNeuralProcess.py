@@ -12,7 +12,7 @@ import tensorflow_probability as tfp
 # to train train on each batch
 # then get new batch and retrain
 class ConditionalNeuralProcess(Model):
-    def __init__(self, layer_width, output_channels = 1):
+    def __init__(self, layer_width, output_channels=1):
         super(ConditionalNeuralProcess, self).__init__()
         self._encoder = Encoder(layer_width)
         self._decoder = Decoder(layer_width, output_channels)
@@ -80,10 +80,10 @@ class Encoder(Layer):
         # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, dim_x + dim_y]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
 
-        encoder_ouput = self.h_func(encoder_input)
+        encoder_output = self.h_func(encoder_input)
 
         # now compute representation vector, average across context points, so axis 1
-        representation = tf.reduce_mean(encoder_ouput, axis=1)
+        representation = tf.reduce_mean(encoder_output, axis=1)
 
         return representation
 
@@ -140,7 +140,6 @@ class Decoder(keras.layers.Layer):
         # floor the variance to avoid pathological solutions
         means, log_stds = tf.split(decoder_output, 2, axis=-1)
         stds = 0.01 + 0.99 * tf.nn.softplus(log_stds)
-        #stds = tf.nn.softplus(log_stds)
 
         return means, stds
 
