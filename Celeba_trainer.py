@@ -104,16 +104,16 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
 
 if __name__ == "__main__":
     load = True
-    save = False
-    training = False
-    test = True
+    save = True
+    training = True
+    test = False
     loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/2021_02_16-06_59_35_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/CelebA/")
     cnp = ConditionalNeuralProcess(128, 3)
 
     # make a generator for the data
     train_data = data_generator('DataSets/CelebA', 'train', batch_size=64, target_size=(128, 128))
-    train_data = data_generator('DataSets/CelebA', 'test', batch_size=1, target_size=(128, 128))
+    test_data = data_generator('DataSets/CelebA', 'test', batch_size=1, target_size=(128, 128))
     # test_data = data_generator('img_align_celeba', '',  batch_size=1, target_size=(128, 128))
 
     if load:
