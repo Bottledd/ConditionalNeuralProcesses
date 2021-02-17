@@ -29,31 +29,16 @@ def train(cnp, train_data, batch_size=64, max_iters=50000):
     start = time.perf_counter()
 
     for i in tqdm(range(1, max_iters+1)):
-        #choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
-        num_context = np.random.randint(2, 784)
         # generate a batch
         batch = next(train_data)[0]
-
+        img_shape = np.array(batch).shape[1:]
+        num_context = np.random.randint(2, img_shape[0]**2)
         data_train = process_images(batch, context_points=num_context)
 
         # process current batch
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
         if i % 1000 == 0:
             print(f'The running avg loss at iteration {i} is: {np.mean(loss[-1000:])}')
-
-        # every 1000 iterations try new max contexts with big batch size to avoid overfitting
-        # if i % 1000 == 0:
-        #     data_val = generate_gp_samples(gp_train, gen_new_gp=True)
-        #     val_loss = cnp.train_step(data_val.Inputs, data_val.Targets)
-        #     print(f"Running avg (1000) loss at iteration {i} is: {np.mean(loss[-1000:])}")
-        #     print(f"Validation Loss at iteration {i} is: {val_loss}")
-
-        # # early stopping
-        # if i > 2000:
-        #     # check any progress actually being made
-        #     # (just to make computationally less expensive)
-        #     if np.mean(loss[-2000:-1000]) - np.mean(loss[-1000:]) < 0:
-        #         break
 
     end = time.perf_counter()
     return cnp, loss, end-start
@@ -65,7 +50,7 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
     img_shape = np.array(batch).shape[1:]
 
     # process image
-    processed = process_images(batch, context_points=int(0.2*img_shape[0]))
+    processed = process_images(batch, context_points=int(0.2*img_shape[0]**2))
 
     # evaluate cnp on image
     means, stds = cnp(processed.Inputs)
@@ -106,7 +91,7 @@ if __name__ == "__main__":
     load = True
     save = True
     training = True
-    test = False
+    test = True
     loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/2021_02_16-06_59_35_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/CelebA/")
     cnp = ConditionalNeuralProcess(128, 3)
@@ -114,12 +99,11 @@ if __name__ == "__main__":
     # make a generator for the data
     train_data = data_generator('DataSets/CelebA', 'train', batch_size=64, target_size=(128, 128))
     test_data = data_generator('DataSets/CelebA', 'test', batch_size=1, target_size=(128, 128))
-    # test_data = data_generator('img_align_celeba', '',  batch_size=1, target_size=(128, 128))
 
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data, max_iters=50000)
+        cnp, loss, total_runtime = train(cnp, train_data, max_iters=5000)
         print(total_runtime)
         # avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         # plt.figure('loss')
