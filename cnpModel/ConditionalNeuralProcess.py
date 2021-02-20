@@ -6,21 +6,26 @@ from tensorflow.keras.layers import Dense, Layer
 from tensorflow.keras import Model
 from GaussianProcesses.GaussianProcessSampler import GaussianProcess
 import tensorflow_probability as tfp
+from cnpModel.Attention import SelfAttentionEncoder, AttentionDecoder
 
 
 # will write class such that it takes in a single [xc, yc] and [xt]
 # to train train on each batch
 # then get new batch and retrain
 class ConditionalNeuralProcess(Model):
-    def __init__(self, layer_width, output_channels=1):
+    def __init__(self, encoder_layer_widths, decoder_layer_widths, attention = False, attention_params = {}):
         super(ConditionalNeuralProcess, self).__init__()
-        self._encoder = Encoder(layer_width)
-        self._decoder = Decoder(layer_width, output_channels)
+        if not(attention):
+            self._encoder = Encoder(encoder_layer_widths)
+            self._decoder = Decoder(decoder_layer_widths)
+        else:
+            self._encoder = SelfAttentionEncoder(encoder_layer_widths, attention_params['num_heads'], attention_params['num_self_attention_blocks'])
+            self._decoder = AttentionDecoder(decoder_layer_widths, attention_params['num_heads'])
         self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
     def call(self, inputs):
-        representation = self._encoder(inputs)
-        means, stds = self._decoder(representation, inputs)
+        encoder_output = self._encoder(inputs)
+        means, stds = self._decoder(encoder_output, inputs)
 
         return means, stds
 
@@ -46,16 +51,18 @@ class Encoder(Layer):
     The Encoder which is to be shared across all context points.
     Instantiate with list of target number of nodes per layer.
     """
-    def __init__(self, layer_width):
+    def __init__(self, encoder_layer_widths):
         super(Encoder, self).__init__()
-        self.h1 = Dense(layer_width, activation='relu')
-        self.h2 = Dense(layer_width, activation='relu')
-        self.h3 = Dense(layer_width, activation=None)
+        # add the hidden layers
+        self.h = []
+        for layer_width in encoder_layer_widths[:-1]:
+            self.h.append(Dense(layer_width, activation='relu'))
+        # no activation for the final layer
+        self.h.append(Dense(encoder_layer_widths[-1], activation=None))
 
     def h_func(self, x):
-        x = self.h1(x)
-        x = self.h2(x)
-        x = self.h3(x)
+        for layer in self.h:
+            x = layer(x)
 
         return x
 
@@ -94,22 +101,19 @@ class Decoder(keras.layers.Layer):
     Instantiate with list of target number of nodes per layer.
     For 1D regression need final layer to have 2 units
     """
-    def __init__(self, layer_width, output_channels):
+    def __init__(self, decoder_layer_widths):
         super(Decoder, self).__init__()
-        self.g1 = Dense(layer_width, activation='relu')
-        self.g2 = Dense(layer_width, activation='relu')
-        self.g3 = Dense(layer_width, activation='relu')
-        self.g4 = Dense(layer_width, activation='relu')
-        # final layer into mean and log stds
-        self.g5 = Dense(2 * output_channels, activation=None)
+        # add the hidden layers
+        self.g = []
+        for layer_width in decoder_layer_widths[:-1]:
+            self.g.append(Dense(layer_width, activation='relu'))
+        # no activation for the final layer
+        self.g.append(Dense(decoder_layer_widths[-1], activation=None))
 
     def g_func(self, x):
 
-        x = self.g1(x)
-        x = self.g2(x)
-        x = self.g3(x)
-        x = self.g4(x)
-        x = self.g5(x)
+        for layer in self.g:
+            x = layer(x)
 
         return x
 
