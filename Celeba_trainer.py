@@ -50,7 +50,7 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
     img_shape = np.array(batch).shape[1:]
 
     # process image
-    processed = process_images(batch, context_points=int(1*img_shape[0]**2))
+    processed = process_images(batch, context_points=int(0.2*img_shape[0]**2))
 
     # evaluate cnp on image
     means, stds = cnp(processed.Inputs)
