@@ -100,8 +100,8 @@ if __name__ == "__main__":
     loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/attention_100kiterations_batch8/")
     saving_path = os.path.join(os.getcwd(), "saved_models/CelebA/")
     encoder_layer_widths = [128,128]
-    decoder_layer_widths = [128,64,64,64,64,6]
-    attention_params = {"num_heads":8, "num_self_attention_blocks":2}
+    decoder_layer_widths = [64,64,64,64,6]
+    attention_params = {"embedding_layer_width":128, "num_heads":8, "num_self_attention_blocks":2}
     cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
     # make a generator for the data
     train_data = data_generator('DataSets/CelebA', 'train', batch_size=8, target_size=(32, 32))

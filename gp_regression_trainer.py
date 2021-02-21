@@ -58,8 +58,8 @@ if __name__ == "__main__":
     loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/attention_100kiterations_batch64/")
     saving_path = os.path.join(os.getcwd(), "saved_models/long_colab_run/")
     encoder_layer_widths = [128,128]
-    decoder_layer_widths = [128,64,64,64,64,2]
-    attention_params = {"num_heads":8, "num_self_attention_blocks":2}
+    decoder_layer_widths = [64,64,64,64,2]
+    attention_params = {"embedding_layer_width":128, "num_heads":8, "num_self_attention_blocks":2}
     cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
     
     if load:

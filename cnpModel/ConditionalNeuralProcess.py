@@ -20,7 +20,7 @@ class ConditionalNeuralProcess(Model):
             self._decoder = Decoder(decoder_layer_widths)
         else:
             self._encoder = SelfAttentionEncoder(encoder_layer_widths, attention_params['num_heads'], attention_params['num_self_attention_blocks'])
-            self._decoder = AttentionDecoder(decoder_layer_widths, attention_params['num_heads'])
+            self._decoder = AttentionDecoder(decoder_layer_widths, attention_params['embedding_layer_width'], attention_params['num_heads'])
         self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
     def call(self, inputs):

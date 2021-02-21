@@ -55,13 +55,13 @@ class SelfAttentionEncoder(keras.layers.Layer):
     
 class AttentionDecoder(keras.layers.Layer):
 
-    def __init__(self, decoder_layer_widths, num_heads):
+    def __init__(self, decoder_layer_widths, embedding_layer_width, num_heads):
         super(AttentionDecoder, self).__init__()
 
-        self.d1 = Dense(decoder_layer_widths[0], activation='relu') # dense layer for the x inputs
+        self.d1 = Dense(embedding_layer_width, activation='relu') # dense layer for the x inputs
         self.a1 = MultiHeadAttention(head_num=num_heads) 
         self.d = []
-        for layer_width in decoder_layer_widths[1:-1:]:
+        for layer_width in decoder_layer_widths[:-1]:
             self.d.append(Dense(layer_width, activation='relu')) # dense layers for the decoder
         self.d.append(Dense(decoder_layer_widths[-1], activation=None))
 
