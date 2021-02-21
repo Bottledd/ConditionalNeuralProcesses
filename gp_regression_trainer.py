@@ -50,17 +50,18 @@ def generate_gp_samples(gp_object, gen_new_gp=False):
 
 
 if __name__ == "__main__":
-    load = False
-    save = True
-    training = True
-    Testing = False
+    load = True
+    save = False
+    training = False
+    Testing = True
     attention = True # use attention
-    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-07_54_37_PM/")
+    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/attention_100kiterations_batch64/")
     saving_path = os.path.join(os.getcwd(), "saved_models/long_colab_run/")
     encoder_layer_widths = [128,128]
     decoder_layer_widths = [128,64,64,64,64,2]
     attention_params = {"num_heads":8, "num_self_attention_blocks":2}
     cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
+    
     if load:
         cnp.load_weights(loading_path)
     if training:

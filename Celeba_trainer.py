@@ -50,7 +50,7 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
     img_shape = np.array(batch).shape[1:]
 
     # process image
-    processed = process_images(batch, context_points=int(0.2*img_shape[0]**2))
+    processed = process_images(batch, context_points=int(1*img_shape[0]**2))
 
     # evaluate cnp on image
     means, stds = cnp(processed.Inputs)
@@ -66,6 +66,7 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
     plt.title('Context')
     plt.tight_layout()
     plt.show()
+    plt.savefig('output/CelebA/context.png')
 
     # plot stuff
     plt.figure('means')
@@ -73,39 +74,43 @@ def test_cnp(cnp, test_data, context_ratio=0.2):
     plt.title('Predictive Mean')
     plt.tight_layout()
     plt.show()
+    plt.savefig('output/CelebA/means.png')
 
     plt.figure('stds') 
     plt.imshow(predictive_stds, cmap='gray')
     plt.title('Predictive Std')
     plt.tight_layout()
     plt.show()
+    plt.savefig('output/CelebA/std.png')
 
     plt.figure('actual')
     plt.imshow(processed.Targets.reshape(img_shape[0], img_shape[1], img_shape[2]), cmap='gray')
     plt.title('Actual')
     plt.tight_layout()
     plt.show()
+    plt.savefig('output/CelebA/actual.png')
 
 
 if __name__ == "__main__":
-    load = False
-    save = True
-    training = True
+    load = True
+    save = False
+    training = False
     test = True
-    loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/2021_02_16-06_59_35_PM/")
+    attention = True # use attention
+    loading_path = os.path.join(os.getcwd(), "saved_models/CelebA/attention_100kiterations_batch8/")
     saving_path = os.path.join(os.getcwd(), "saved_models/CelebA/")
-    encoder_layer_widths = [128,128,128]
-    decoder_layer_widths = [128,128,128,128,6]
-    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths)
-
+    encoder_layer_widths = [128,128]
+    decoder_layer_widths = [128,64,64,64,64,6]
+    attention_params = {"num_heads":8, "num_self_attention_blocks":2}
+    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
     # make a generator for the data
-    train_data = data_generator('DataSets/CelebA', 'train', batch_size=64, target_size=(32, 32))
+    train_data = data_generator('DataSets/CelebA', 'train', batch_size=8, target_size=(32, 32))
     test_data = data_generator('DataSets/CelebA', 'test', batch_size=1, target_size=(32, 32))
 
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data, max_iters=5000)
+        cnp, loss, total_runtime = train(cnp, train_data, max_iters=100000)
         print(total_runtime)
         # avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         # plt.figure('loss')
