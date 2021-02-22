@@ -10,9 +10,10 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-def train(cnp, batch_size=64, max_iters=500000):
+def train(cnp, batch_size=64, max_iters=100000):
     # tf.config.run_functions_eagerly(True)
-    default_max_context = np.random.randint(3, 400)
+    percentage = 1
+    default_max_context = np.random.randint(2, percentage * 50)
     gp_train = GaussianProcess(batch_size, default_max_context, testing=False)
     loss = []
     start = time.perf_counter()
@@ -21,14 +22,14 @@ def train(cnp, batch_size=64, max_iters=500000):
         try:
             data_train = generate_gp_samples(gp_train)
         except:
-            pass
+            continue
 
         loss.append(cnp.train_step(data_train.Inputs, data_train.Targets))
         # every 1000 iterations try new max contexts with big batch size to avoid overfitting
-        if i % 10000 == 0:
+        if i % 1000 == 0:
             # data_val = generate_gp_samples(gp_train, gen_new_gp=True)
             # val_loss = cnp.train_step(data_val.Inputs, data_val.Targets)
-            print(f"Running avg (10000) loss at iteration {i} is: {np.mean(loss[-10000:])}")
+            print(f"Running avg (1000) loss at iteration {i} is: {np.mean(loss[-1000:])}")
             # print(f"Validation Loss at iteration {i} is: {val_loss}")
 
         # # early stopping
@@ -50,12 +51,17 @@ def generate_gp_samples(gp_object, gen_new_gp=False):
 
 if __name__ == "__main__":
     load = True
-    save = True
-    training = True
-    Testing = False
-    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/2021_02_15-07_54_37_PM/")
+    save = False
+    training = False
+    Testing = True
+    attention = True # use attention
+    loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/attention_100kiterations_batch64/")
     saving_path = os.path.join(os.getcwd(), "saved_models/long_colab_run/")
-    cnp = ConditionalNeuralProcess(128)
+    encoder_layer_widths = [128,128]
+    decoder_layer_widths = [64,64,64,64,2]
+    attention_params = {"embedding_layer_width":128, "num_heads":8, "num_self_attention_blocks":2}
+    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
+    
     if load:
         cnp.load_weights(loading_path)
     if training:

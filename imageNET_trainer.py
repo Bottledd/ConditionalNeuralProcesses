@@ -97,13 +97,17 @@ if __name__ == "__main__":
     (train_data, _), (test_data, _) = tf.keras.datasets.mnist.load_data(
         path='mnist.npz'
     )
-    load = True
+    load = False
     save = True
     training = True
     test = False
+    attention = True
     loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_15-07_25_31_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/ImageNET/")
-    cnp = ConditionalNeuralProcess(128)
+    encoder_layer_widths = [128,128]
+    decoder_layer_widths = [128,64,64,64,64,2]
+    attention_params = {"num_heads":8, "num_self_attention_blocks":2}
+    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params)
     if load:
         cnp.load_weights(loading_path)
     if training:
