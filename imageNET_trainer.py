@@ -97,11 +97,11 @@ if __name__ == "__main__":
     (train_data, _), (test_data, _) = tf.keras.datasets.mnist.load_data(
         path='mnist.npz'
     )
-    load = False
-    save = True
-    training = True
+    load = True
+    save = False
+    training = False
     test = False
-    attention = True
+    attention = False
     loading_path = os.path.join(os.getcwd(), "saved_models/ImageNET/2021_02_15-07_25_31_PM/")
     saving_path = os.path.join(os.getcwd(), "saved_models/ImageNET/")
     encoder_layer_widths = [128,128]

@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Dense, Layer
@@ -13,9 +12,9 @@ from cnpModel.Attention import SelfAttentionEncoder, AttentionDecoder
 # to train train on each batch
 # then get new batch and retrain
 class ConditionalNeuralProcess(Model):
-    def __init__(self, encoder_layer_widths, decoder_layer_widths, attention = False, attention_params = {}):
+    def __init__(self, encoder_layer_widths, decoder_layer_widths, attention=False, attention_params={}):
         super(ConditionalNeuralProcess, self).__init__()
-        if not(attention):
+        if not attention:
             self._encoder = Encoder(encoder_layer_widths)
             self._decoder = Decoder(decoder_layer_widths)
         else:
@@ -77,13 +76,6 @@ class Encoder(Layer):
         # process data for encoder
         x_context, y_context = inputs[0], inputs[1]
 
-        # # grab shapes
-        # batch_size, num_context_points = x_context.shape
-        #
-        # # reshape to [batch_size, num_points, 1]
-        # x_context = tf.reshape(x_context, (batch_size, num_context_points, 1))
-        # y_context = tf.reshape(y_context, (batch_size, num_context_points, 1))
-
         # concatenate to form inputs [x_context, y_context], overall shape [batch_size, num_context, dim_x + dim_y]
         encoder_input = tf.concat([x_context, y_context], axis=-1)
 
@@ -123,15 +115,6 @@ class Decoder(keras.layers.Layer):
         """
         # grab x_data
         x_data = inputs[-1]
-
-        # need to concatenate representation to data, so each data set looks like [x_T, representation]
-
-        # # need to reshape x_data
-        # # grab shapes
-        # batch_size, num_context_points = x_data.shape
-        #
-        # # reshape to [batch_size * num_points * 1]
-        # x_data = tf.reshape(x_data, (batch_size, num_context_points, 1))
 
         # reshape representation vector and repeat it
         representation = tf.repeat(tf.expand_dims(representation, axis=1), x_data.shape[1], axis=1)

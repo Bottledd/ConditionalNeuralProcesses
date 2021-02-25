@@ -1,4 +1,4 @@
-#from .backend import keras, TF_KERAS
+from .backend import keras, TF_KERAS
 from tensorflow import keras
 from .backend import backend as K
 from keras_self_attention import ScaledDotProductAttention
