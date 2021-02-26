@@ -50,7 +50,11 @@ class Omniglot:
 
             train_data = train_data.concatenate(rotated_train_data)
             train_classes = np.concatenate([train_classes, train_classes+1600])
-            return train_data, test_data, train_classes, test_classes
+
+            # combine into one dataset
+            full_dataset = train_data.concatenate(test_data)
+
+            return full_dataset, train_classes, test_classes
 
         def make_data_dict(dataset):
             AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -64,12 +68,11 @@ class Omniglot:
 
             return data
 
-        training_data, testing_data, self._training_classes, self._testing_classes = build_data(data)
+        full_dataset, self._training_classes, self._testing_classes = build_data(data)
 
-        self._train_data_dict = make_data_dict(training_data)
-        self._test_data_dict = make_data_dict(testing_data)
+        self._data_dict = make_data_dict(full_dataset)
 
-    def get_mini_dataset(self, batch_size=12, shots=1, num_classes=5, testing=False):
+    def get_mini_dataset(self, batch_size=10, shots=1, num_classes=5, testing=False):
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
         # 20 - shots examples for the decoder
@@ -81,8 +84,12 @@ class Omniglot:
         encoder_labels = np.zeros(shape=(shots * num_classes, 1))
         encoder_images = np.zeros(shape=(shots * num_classes, 28, 28, 1))
 
-        # randomly choose num_classes labels
-        labels = np.random.choice(self._training_classes, size=num_classes, replace=False)
+        if not testing:
+            # randomly choose num_classes training labels
+            labels = np.random.choice(self._training_classes, size=num_classes, replace=False)
+        else:
+            # randomly choose num_classes testing labels
+            labels = np.random.choice(self._testing_classes, size=num_classes, replace=False)
 
         # loop through labels and create mini datasets
         for i, label in enumerate(labels):
@@ -91,7 +98,7 @@ class Omniglot:
             encoder_labels[i * shots: (i+1) * shots] = i
 
             # now randomly choose 20 - shots images from this label
-            labelled_images = self._train_data_dict[label]
+            labelled_images = self._data_dict[label]
             # shuffle images
             random.shuffle(labelled_images)
             decoder_images[i * (20 - shots): (i + 1) * (20 - shots)] = labelled_images[:-shots]
@@ -105,8 +112,8 @@ class Omniglot:
 
         # shuffle the datasets and organise with batch size
 
-        encoder_dataset = encoder_dataset.cache().shuffle(num_classes*shots).batch(num_classes*shots).prefetch(AUTOTUNE)
-        decoder_dataset = decoder_dataset.cache().shuffle(num_classes*(20-shots)).batch(num_classes*(20-shots)).prefetch(AUTOTUNE)
+        encoder_dataset = encoder_dataset.cache().repeat(int(20-shots / batch_size)).batch(num_classes).prefetch(AUTOTUNE)
+        decoder_dataset = decoder_dataset.cache().shuffle(num_classes*(20-shots)).batch(batch_size).prefetch(AUTOTUNE)
 
         return encoder_dataset, decoder_dataset
 

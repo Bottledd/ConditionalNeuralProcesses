@@ -31,22 +31,24 @@ class ClassificationCNP(Model):
 
     def _loss_func(self, labels, logits):
         dist = tfp.distributions.Categorical(logits=logits)
+        preds = np.argmax(logits, axis=1)
+        correct = np.argmax(logits, axis=1) == labels.numpy().flatten()
+        accuracy = np.sum(correct) / preds.shape[0]
         each_loss = dist.log_prob(tf.squeeze(labels))
         mean_loss = tf.reduce_mean(each_loss)
 
-        return -mean_loss
+        return -mean_loss, accuracy
 
-    def train_step(self, encoder_data, decoder_data, accuracy_metric):
+    def train_step(self, encoder_data, decoder_data):
         _, labels = decoder_data
         with tf.GradientTape() as tape:
             logits = self(encoder_data, decoder_data)
-            loss = self._loss_func(labels, logits)
+            loss, accuracy = self._loss_func(labels, logits)
         variables = self.trainable_variables
         gradients = tape.gradient(loss, variables)
         self.optimizer.apply_gradients(zip(gradients, variables))
-        accuracy_metric.update_state(labels, logits)
 
-        return loss
+        return loss, accuracy
 
 
 class Encoder(Layer):
@@ -59,9 +61,10 @@ class Encoder(Layer):
         # add the convolutional layers
         self.h = []
         for layer_width in encoder_layer_widths[:-1]:
-            self.h.append(Conv2D(layer_width, 3, strides=(2, 2), activation='relu'))
+            self.h.append(Conv2D(layer_width, 3, activation='relu'))
         # no activation for the final layer
-        self.h.append(Conv2D(layer_width, 3, strides=(2, 2), activation=None))
+        self.h.append(Conv2D(encoder_layer_widths[-1], 3, strides=(2, 2), activation=None))
+        self.h.append(MaxPool2D)
         self.h.append(Flatten())
 
     def h_func(self, x):
@@ -77,7 +80,6 @@ class Encoder(Layer):
         Pass through NN,
         Compute a representation by aggregating the outputs.
         """
-
         # process data for encoder
         images, labels = data
 
@@ -106,10 +108,12 @@ class Decoder(keras.layers.Layer):
         # add the hidden layers
         self.g = []
         for layer_width in decoder_layer_widths[:-1]:
-            self.g.append(Dense(layer_width, activation='relu'))
+            self.g.append(Conv2D(layer_width, 3, activation='relu'))
 
         # no activation for the final layer
-        self.g.append(Dense(decoder_layer_widths[-1], activation=None))
+        self.g.append(Conv2D(decoder_layer_widths[-1], 3, strides=(2,2), activation=None))
+        self.g.append(MaxPool2D())
+        self.g.append(Flatten())
 
     def g_func(self, x):
 
@@ -128,23 +132,11 @@ class Decoder(keras.layers.Layer):
 
         assert batch_size == labels.shape[0]
 
-        # reshape representation vector and repeat it
-        representation = tf.repeat(tf.expand_dims(representation, axis=0), images.shape[0], axis=0)
+        # calculate representation for target images
+        embedded_images = self.g_func(images)
 
-
-        # flatten image into vector (MAYBE THIS SHOULD CHANGE)
-        images = tf.reshape(images, (batch_size, -1))
-
-        # test my stuff
-        # decoder_input = tf.concat([tf.repeat(tf.expand_dims(images, axis=1), representation.shape[1], axis=1),
-        #                           representation], axis=-1)
-
-        # concatenate representation to inputs
-        decoder_input = tf.concat([images, tf.reshape(representation, (batch_size, -1))], axis=-1)
-
-        logits = self.g_func(decoder_input)
-
-        # SHOULD I INSTEAD USE tf.split TO GET THE LOGITS?
+        # compute similarities
+        logits = tf.tensordot(embedded_images, tf.transpose(representation), axes=1)
 
         return logits
 
@@ -155,24 +147,33 @@ if __name__ == "__main__":
     shots = 1
 
     # first three layers are Conv2D and width means num filters, final layer is Dense
-    encoder_widths = [32, 64, 128]
+    encoder_widths = [32, 64, 128, 256]
 
     # need final width to be divisible by num classes
-    decoder_widths = [128, 128, num_classes]
+    decoder_widths = [32, 64, 128, 256]
     cnp = ClassificationCNP(encoder_widths, decoder_widths, num_classes)
-    acc_metric = keras.metrics.SparseCategoricalAccuracy()
-    for epoch in tqdm(range(10000)):
+
+    for epoch in tqdm(range(500)):
 
         loop_train, loop_test = dummy_data.get_mini_dataset(shots=shots, num_classes=num_classes)
-        loss = []
-
+        loss_list = []
+        accuracy_list = []
         for step, (batchX, batchy) in enumerate(zip(loop_train, loop_test)):
-            loss.append(cnp.train_step(batchX, batchy, acc_metric))
-            # print(loss[-1])
-        print(f"The loss at epoch {epoch} is {np.mean(loss)}")
-        # training_accuracy = acc_metric.result()
-        # if epoch % 100 == 0:
-        #     print(f"Epoch {epoch+1}: training accuracy is {training_accuracy}, loss is {np.mean(loss[-100:])}")
-        #     acc_metric.reset_states()
+            loss, accuracy = cnp.train_step(batchX, batchy)
+            loss_list.append(loss)
+            accuracy_list.append(accuracy)
 
+        print(f"Epoch {epoch}: Loss {np.mean(loss_list)},   Accuracy {np.round(100 * np.mean(accuracy_list), decimals=1)},"
+              f"    One-shot Accuracy {100 * accuracy_list[0]}")
 
+    big_acc = []
+    for test_epoch in range(100):
+        test_context, test_target = dummy_data.get_mini_dataset(shots=shots, num_classes=num_classes, testing=True)
+
+        accuracies = []
+        for step, (batchX, batchy) in enumerate(zip(test_context, test_target)):
+            logits = cnp(batchX, batchy)
+            loss, accuracy = cnp._loss_func(batchy[1], logits)
+            accuracies.append(accuracy)
+            big_acc.append(accuracy)
+        print(f"Mini accuracy is {np.mean(accuracies)}")
