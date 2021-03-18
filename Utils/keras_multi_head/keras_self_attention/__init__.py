@@ -1,0 +1,5 @@
+from .seq_self_attention import SeqSelfAttention
+from .seq_weighted_attention import SeqWeightedAttention
+from .real_former import ResidualScaledDotProductAttention
+
+__version__ = '0.49.0'

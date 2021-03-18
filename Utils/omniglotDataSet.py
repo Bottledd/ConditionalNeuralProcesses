@@ -25,13 +25,16 @@ class Omniglot:
             image = tf.cast(image, tf.float32) / 255.0
             return image, label
 
-        def build_data(dataset):
+        def build_data(dataset, random_seed=0):
             """
             :param dataset: tfds object containing full dataset
+            :param random_seed: used for reproducibility
             :return: train, test data which is randomly chosen by class
             """
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
+            # keep this the same for reproducibility
+            np.random.seed(random_seed)
             # randomly sample 1200 classes to use for training
             train_classes = np.random.choice(np.arange(1600), size=1200, replace=False)
             test_classes = np.setdiff1d(np.arange(1600), train_classes)
@@ -95,14 +98,14 @@ class Omniglot:
         for i, label in enumerate(labels):
             # assign 20 - shots of data for decoder, shots to encoder
             decoder_labels[i * (20 - shots): (i + 1) * (20 - shots)] = i
-            encoder_labels[i * shots: (i+1) * shots] = i
+            encoder_labels[(np.arange(shots) * num_classes) + i] = i
 
             # now randomly choose 20 - shots images from this label
             labelled_images = self._data_dict[label]
             # shuffle images
             random.shuffle(labelled_images)
             decoder_images[i * (20 - shots): (i + 1) * (20 - shots)] = labelled_images[:-shots]
-            encoder_images[i * shots: (i+1) * shots] = labelled_images[(20-shots):]
+            encoder_images[(np.arange(shots) * num_classes) + i] = labelled_images[(20-shots):]
 
         encoder_dataset = tf.data.Dataset.from_tensor_slices((encoder_images.astype(np.float32),
                                                              encoder_labels.astype(np.int32)))
@@ -111,8 +114,8 @@ class Omniglot:
                                                              decoder_labels.astype(np.int32)))
 
         # shuffle the datasets and organise with batch size
-
-        encoder_dataset = encoder_dataset.cache().repeat(int(20-shots / batch_size)).batch(num_classes).prefetch(AUTOTUNE)
+        num_steps = int((num_classes*(20 - shots)) / batch_size) + 1
+        encoder_dataset = encoder_dataset.cache().repeat(num_steps).batch(num_classes * shots).prefetch(AUTOTUNE)
         decoder_dataset = decoder_dataset.cache().shuffle(num_classes*(20-shots)).batch(batch_size).prefetch(AUTOTUNE)
 
         return encoder_dataset, decoder_dataset
@@ -133,4 +136,6 @@ def rotate_and_new_class(image, label):
 if __name__ == "__main__":
     test = Omniglot()
     loop_train, loop_test = test.get_mini_dataset()
+
+
 

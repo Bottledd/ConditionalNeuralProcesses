@@ -14,8 +14,6 @@ class ClassificationCNP(Model):
         self._encoder = Encoder(encoder_layer_widths)
         self._decoder = Decoder(decoder_layer_widths)
         self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-        # equivalent to using log likelihood from paper
-        #self._loss_func = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
         self._num_classes = num_classes
 
     def call(self, encoder_data, decoder_data):
@@ -60,11 +58,15 @@ class Encoder(Layer):
         super(Encoder, self).__init__()
         # add the convolutional layers
         self.h = []
-        for layer_width in encoder_layer_widths[:-1]:
-            self.h.append(Conv2D(layer_width, 3, activation='relu'))
+        for i, layer_width in enumerate(encoder_layer_widths[:-1]):
+            # self.h.append(Conv2D(layer_width, 3, activation='relu'))
+            if i > 2:
+                self.h.append(Conv2D(layer_width, 3, strides=(2, 2), activation='relu'))
+            else:
+                self.h.append(Conv2D(layer_width, 3, activation='relu'))
         # no activation for the final layer
         self.h.append(Conv2D(encoder_layer_widths[-1], 3, strides=(2, 2), activation=None))
-        self.h.append(MaxPool2D)
+        self.h.append(MaxPool2D())
         self.h.append(Flatten())
 
     def h_func(self, x):
@@ -107,13 +109,19 @@ class Decoder(keras.layers.Layer):
         super(Decoder, self).__init__()
         # add the hidden layers
         self.g = []
-        for layer_width in decoder_layer_widths[:-1]:
-            self.g.append(Conv2D(layer_width, 3, activation='relu'))
-
+        for i, layer_width in enumerate(decoder_layer_widths[:-1]):
+            # self.g.append(Conv2D(layer_width, 3, activation='relu'))
+            if i > 2:
+                self.g.append(Conv2D(layer_width, 3, strides=(2, 2), activation='relu'))
+            else:
+                self.g.append(Conv2D(layer_width, 3, activation='relu'))
         # no activation for the final layer
-        self.g.append(Conv2D(decoder_layer_widths[-1], 3, strides=(2,2), activation=None))
+        self.g.append(Conv2D(decoder_layer_widths[-1], 3, strides=(2, 2), activation=None))
         self.g.append(MaxPool2D())
         self.g.append(Flatten())
+
+        # add dense layer to compute final logits
+        self.logit_func = Dense(5, activation=None)
 
     def g_func(self, x):
 
@@ -135,8 +143,11 @@ class Decoder(keras.layers.Layer):
         # calculate representation for target images
         embedded_images = self.g_func(images)
 
-        # compute similarities
+        # compute similarities using dot product
         logits = tf.tensordot(embedded_images, tf.transpose(representation), axes=1)
+
+        # # pass through dense layer to get logits
+        # logits = self.logit_func(similarites)
 
         return logits
 
