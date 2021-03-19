@@ -4,6 +4,7 @@
     <list>
       <list>
         <remote-mappings server-id="python@sftp://km817@localhost:6000/homes/km817/miniconda3/envs/TF/bin/python" />
+        <remote-mappings server-id="python@sftp://km817@localhost:6000/homes/km817/miniconda3/envs/NLP/bin/python" />
       </list>
     </list>
   </component>

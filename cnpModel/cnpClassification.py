@@ -53,6 +53,7 @@ class Encoder(Layer):
     The Encoder which is to be shared across all context points.
     Instantiate with list of target number of nodes per layer.
     """
+
     def __init__(self, cnn_layer_widths):
         super(Encoder, self).__init__()
         # first create a CNN to pass raw image through
@@ -65,7 +66,7 @@ class Encoder(Layer):
         self.cnn.append(Conv2D(cnn_layer_widths[-1], 3, strides=(2, 2), activation=None))
         self.cnn.append(MaxPool2D())
         self.cnn.append(Flatten())
-        #self.cnn.append(Dense(2))
+        # self.cnn.append(Dense(2))
 
     def h_func(self, x):
         for layer in self.cnn:
@@ -103,6 +104,7 @@ class Decoder(keras.layers.Layer):
     Instantiate with list of target number of nodes per layer.
     For 1D regression need final layer to have 2 units
     """
+
     def __init__(self, cnn_layer_widths, decoder_layer_widths, num_classes, use_dot_product):
         super(Decoder, self).__init__()
         self._num_classes = num_classes
@@ -115,7 +117,7 @@ class Decoder(keras.layers.Layer):
         self.cnn.append(Conv2D(cnn_layer_widths[-1], 3, strides=(2, 2), activation=None))
         self.cnn.append(MaxPool2D())
         self.cnn.append(Flatten())
-        #self.cnn.append(Dense(2))
+        # self.cnn.append(Dense(2))
 
         # This seems to not work well
         # # create MLP
@@ -198,8 +200,9 @@ if __name__ == "__main__":
             loss_list.append(loss)
             accuracy_list.append(accuracy)
 
-        print(f"Epoch {epoch}: Loss {np.mean(loss_list)},   Accuracy {np.round(100 * np.mean(accuracy_list), decimals=1)},"
-              f"    One-shot Accuracy {100 * accuracy_list[0]}")
+        print(
+            f"Epoch {epoch}: Loss {np.mean(loss_list)},   Accuracy {np.round(100 * np.mean(accuracy_list), decimals=1)},"
+            f"    One-shot Accuracy {100 * accuracy_list[0]}")
 
     big_acc = []
     for test_epoch in range(100):

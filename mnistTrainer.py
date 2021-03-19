@@ -1,4 +1,4 @@
-import os
+
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +8,7 @@ from tqdm import tqdm
 import time
 from Utils.mnistProcessor import process_images, format_context_points_image
 from cnpModel.new_CNP import ConditionalNeuralProcess
-
+import os
 
 def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
     """
@@ -19,9 +19,9 @@ def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
     loss = []
     start = time.perf_counter()
 
-    for i in tqdm(range(1, max_iters+1)):
+    for i in tqdm(range(1, max_iters + 1)):
         # choice = np.random.choice([5, 10, 100, 250, 500], replace=True)
-        num_context = np.random.randint(2, 784)
+        num_context = np.random.randint(2, 784 * 0.3)
         # grab random image batch
         rand_batch = np.random.choice(np.arange(data.shape[0]), replace=False, size=batch_size)
         batch = data[rand_batch, :]
@@ -34,15 +34,15 @@ def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
             print(f'The running avg loss at iteration {i} is: {np.mean(loss[-10000:])}')
 
     end = time.perf_counter()
-    return cnp, loss, end-start
+    return cnp, loss, end - start
 
 
-def test_cnp(cnp, test_data, context_points=700, convolutional=False):
+def test_cnp(cnp, test_data, context_points=1, convolutional=False):
     # grab a random image from the test set
-    image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1, 28, 28)
+    image = test_data[np.random.randint(0, test_data.shape[0] + 1)].reshape(1, 28, 28)
 
     # process image
-    processed = process_images(image, context_points=context_points, convolutional = convolutional)
+    processed = process_images(image, context_points=context_points, convolutional=convolutional)
 
     # evaluate cnp on image
     means, stds = cnp(processed.Inputs)
@@ -50,10 +50,11 @@ def test_cnp(cnp, test_data, context_points=700, convolutional=False):
     # reshape for plotting
     predictive_mean = tf.reshape(means, (28, 28))
     predictive_stds = tf.reshape(stds, (28, 28))
-    if not convolutional :
+    if not convolutional:
         context_image = format_context_points_image(processed.Inputs)
     else:
         context_image = processed.Inputs[1][0]
+
 
     # plot stuff
     plt.figure('context')
@@ -86,16 +87,20 @@ if __name__ == "__main__":
         path='mnist.npz'
     )
     load = True
-    save = True
-    training = True
+    save = False
+    training = False
     test = True
     attention = False
-    convolutional = False
+    convolutional = True
+    iterations = 200000
+    batching = 24
     attention_params = {}
     convolutional_params = {}
+    encoder_layer_widths = []
+    decoder_layer_widths = []
     if attention:
         loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ACNP_100kiterations_batch8/")
-        saving_path = os.path.join(os.getcwd(), "saved_models/MNIST/ACNP_NEW/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/ATTNCNP_{int(iterations / 1000)}k_{batching}B/")
         encoder_layer_widths = [128, 128]
         decoder_layer_widths = [64, 64, 64, 64, 2]
         attention_params = {"embedding_layer_width": 128, "num_heads": 8, "num_self_attention_blocks": 2}
@@ -105,11 +110,11 @@ if __name__ == "__main__":
         kernel_size_decoder = 5
         convolutional_params = {"number_filters": 128, "kernel_size_encoder": 9, "kernel_size_decoder": 5,
                                 "number_residual_blocks": 4, "convolutions_per_block": 1, "output_channels": 1}
-        pass
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/CONVCNP_100k_64B/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CONVCNP_{int(iterations / 1000)}k_{batching}B/")
     else:
-        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/CNP_50kiterations_batch64/")
-        saving_path = os.path.join(os.getcwd(), "saved_models/MNIST/CNP_NEW/")
-        # loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/2021_02_13-11_16_46_AM/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/CNP_100k_64B/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CNP_{int(iterations / 1000)}k_{batching}B/")
 
         encoder_layer_widths = [128, 128, 128]
         decoder_layer_widths = [128, 128, 128, 128, 2]
@@ -121,9 +126,9 @@ if __name__ == "__main__":
     if load:
         cnp.load_weights(loading_path)
     if training:
-        cnp, loss, total_runtime = train(cnp, train_data, max_iters=100000, batch_size=64, convolutional=convolutional)
+        cnp, loss, total_runtime = train(cnp, train_data, max_iters=iterations, batch_size=batching,
+                                         convolutional=convolutional)
         print(total_runtime)
-        avg_loss = pd.Series(loss).rolling(window=100).mean().iloc[100 - 1:].values
         file_names = f"output/MNIST/training_loss/loss_{'Conv' if convolutional else 'Atten' if attention else ''}CNP"
         with open(file_names + ".txt", 'w') as file:
             for listitem in loss:

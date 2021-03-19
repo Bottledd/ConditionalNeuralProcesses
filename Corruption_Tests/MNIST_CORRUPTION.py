@@ -8,12 +8,11 @@ from Utils.imageProcessor import process_images, format_context_points_image
 from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
 
 
-def test_cnp(cnp, test_data, context_points=28*28, convolutional=False):
+def test_cnp(cnp, test_data, context_points=28 * 28, convolutional=False):
     image = next(iter(test_data.take(1)))[0].numpy().reshape(1, 28, 28)
 
     # grab a random image from the test set
-    #image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1, 28, 28)
-
+    # image = test_data[np.random.randint(0, test_data.shape[0]+1)].reshape(1, 28, 28)
 
     # process image
     processed = process_images(image, context_points=context_points, convolutional=convolutional)
@@ -54,6 +53,7 @@ def test_cnp(cnp, test_data, context_points=28*28, convolutional=False):
     plt.tight_layout()
     plt.show()
 
+
 if __name__ == "__main__":
     # load corrupted data set
     data, info = tfds.load(
@@ -84,13 +84,14 @@ if __name__ == "__main__":
         pass
     else:
         loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/CNP_50kiterations_batch64/")
-        #loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/2021_02_13-11_16_46_AM/")
+        # loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/2021_02_13-11_16_46_AM/")
 
         encoder_layer_widths = [128, 128, 128]
         decoder_layer_widths = [128, 128, 128, 128, 2]
 
     # define the model
-    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention, attention_params=attention_params,
+    cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention,
+                                   attention_params=attention_params,
                                    convolutional=convolutional, convolutional_params=convolutional_params)
     cnp.load_weights(loading_path)
     test_cnp(cnp, data, convolutional=convolutional)

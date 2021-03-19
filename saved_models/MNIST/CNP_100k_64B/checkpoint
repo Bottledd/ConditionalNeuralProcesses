@@ -1,0 +1,2 @@
+model_checkpoint_path: "CNP_100k_64B"
+all_model_checkpoint_paths: "CNP_100k_64B"
