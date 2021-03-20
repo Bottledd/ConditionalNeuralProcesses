@@ -92,7 +92,7 @@ if __name__ == '__main__':
     encoder_layer_widths = []
     decoder_layer_widths = []
     if attention:
-        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ACNP_100kiterations_batch8/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400K_24B/")
         encoder_layer_widths = [128, 128]
         decoder_layer_widths = [64, 64, 64, 64, 2]
         attention_params = {"embedding_layer_width": 128, "num_heads": 8, "num_self_attention_blocks": 2}

@@ -87,8 +87,8 @@ if __name__ == "__main__":
         path='mnist.npz'
     )
     load = True
-    save = True
-    training = True
+    save = False
+    training = False
     test = True
     attention = True
     convolutional = False
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     encoder_layer_widths = []
     decoder_layer_widths = []
     if attention:
-        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_200k_24B/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400k_24B/")
         saving_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400k_24B/")
         #saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/ATTNCNP_{int(iterations / 1000)}k_{batching}B/")
         encoder_layer_widths = [128, 128]
