@@ -37,7 +37,7 @@ def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
     return cnp, loss, end - start
 
 
-def test_cnp(cnp, test_data, context_points=1, convolutional=False):
+def test_cnp(cnp, test_data, context_points=70, convolutional=False):
     # grab a random image from the test set
     image = test_data[np.random.randint(0, test_data.shape[0] + 1)].reshape(1, 28, 28)
 
@@ -87,11 +87,11 @@ if __name__ == "__main__":
         path='mnist.npz'
     )
     load = True
-    save = False
-    training = False
+    save = True
+    training = True
     test = True
-    attention = False
-    convolutional = True
+    attention = True
+    convolutional = False
     iterations = 200000
     batching = 24
     attention_params = {}
@@ -99,8 +99,9 @@ if __name__ == "__main__":
     encoder_layer_widths = []
     decoder_layer_widths = []
     if attention:
-        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ACNP_100kiterations_batch8/")
-        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/ATTNCNP_{int(iterations / 1000)}k_{batching}B/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_200k_24B/")
+        saving_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400k_24B/")
+        #saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/ATTNCNP_{int(iterations / 1000)}k_{batching}B/")
         encoder_layer_widths = [128, 128]
         decoder_layer_widths = [64, 64, 64, 64, 2]
         attention_params = {"embedding_layer_width": 128, "num_heads": 8, "num_self_attention_blocks": 2}
@@ -122,7 +123,8 @@ if __name__ == "__main__":
     # define the model
     cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention,
                                    attention_params=attention_params,
-                                   convolutional=convolutional, convolutional_params=convolutional_params)
+                                   convolutional=convolutional, convolutional_params=convolutional_params,
+                                   learning_rate=1e-4)
     if load:
         cnp.load_weights(loading_path)
     if training:

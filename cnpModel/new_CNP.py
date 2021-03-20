@@ -15,7 +15,7 @@ from cnpModel.Convolutional import ConvolutionalEncoder, ConvolutionalDecoder
 # then get new batch and retrain
 class ConditionalNeuralProcess(Model):
     def __init__(self, encoder_layer_widths, decoder_layer_widths, attention=False, attention_params={},
-                 convolutional=False, convolutional_params={}):
+                 convolutional=False, convolutional_params={}, learning_rate=1e-3):
         super(ConditionalNeuralProcess, self).__init__()
         if attention and convolutional:
             raise Exception('Cannot handle both attention and convolutional at the moment')
@@ -38,7 +38,7 @@ class ConditionalNeuralProcess(Model):
                                                  convolutional_params["convolutions_per_block"],
                                                  convolutional_params["output_channels"])
 
-        self.optimizer = keras.optimizers.Adam(learning_rate=1e-3)
+        self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         self.convolutional = convolutional
 
     def call(self, inputs):

@@ -85,7 +85,7 @@ if __name__ == '__main__':
     new_img = img_to_array(img)
     load = True
     test = True
-    attention = False
+    attention = True
     convolutional = False
     attention_params = {}
     convolutional_params = {}
