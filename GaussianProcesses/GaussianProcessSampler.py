@@ -145,6 +145,10 @@ class GaussianProcess(object):
         plt.tight_layout()
         plt.show()
 
+def sample_from_cnp(cnp, data):
+    means, stds = cnp(data.Inputs)
+    means = means.numpy().reshape(400,)
+    stds = stds.numpy().reshape(400,)
 
 if __name__ == "__main__":
     gp_test = GaussianProcess(10,10,testing=False)
