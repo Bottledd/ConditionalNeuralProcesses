@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from GaussianProcesses.GaussianProcessSampler import GaussianProcess
-from cnpModel.new_CNP import ConditionalNeuralProcess
+from cnpModel.ConditionalNeuralProcesses import ConditionalNeuralProcess
 import tensorflow as tf
 import os
 import time
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     save = False
     training = False
     test = True
-    attention = False
+    attention = True
     convolutional = False
     iterations = 200000
     batching = 24
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CONVCNP_{int(iterations / 1000)}k_{batching}B/")
     else:
         loading_path = os.path.join(os.getcwd(), "saved_models/GP_Regression/long_colab_run/")
-        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CNP_{int(iterations / 1000)}k_{batching}B/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/GP_Regression/CNP_{int(iterations / 1000)}k_{batching}B/")
 
         encoder_layer_widths = [128, 128, 128]
         decoder_layer_widths = [128, 128, 128, 128, 2]
@@ -103,8 +103,8 @@ if __name__ == "__main__":
         cnp.save_weights("saved_models/GP_Regression/" + current_time + "/", overwrite=False)
         # cnp.save_weights(saving_path)
     if test:
-        gp = GaussianProcess(1, 7, testing=True)
+        gp = GaussianProcess(1, 15, testing=True)
         data = gp.generate_curves()
         means, stds = cnp(data.Inputs)
-        gp_mean, gp_stds = gp.fit_gp(data.Inputs)
-        gp.plot_fit(data.Inputs, data.Targets, means.numpy(), stds.numpy())
+        #gp_mean, gp_stds = gp.fit_gp(data.Inputs)
+        gp.plot_fit(data.Inputs, data.Targets, means.numpy(), stds.numpy(), draw_cnp_sample=True)

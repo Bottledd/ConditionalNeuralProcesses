@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from PIL import Image
 from Utils.doubleMNIST import process_images, format_context_points_image
-from cnpModel.new_CNP import ConditionalNeuralProcess
+from cnpModel.ConditionalNeuralProcesses import ConditionalNeuralProcess
 import os
 from PIL import Image
 import numpy as np
@@ -20,7 +20,7 @@ def fix_images(direct="Figures/DoubleMNist/"):
     print("resizing done !")
 
 
-def test_cnp(cnp, test_data, context_points=400, convolutional=False, type=None):
+def test_cnp(cnp, test_data, context_points=10, convolutional=False, type=None):
     # grab a random image from the test set
     image = test_data.reshape(1, test_data.shape[0], test_data.shape[1])
     # context_points = int(context_points * (test_data.shape[0]**2))

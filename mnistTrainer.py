@@ -7,7 +7,7 @@ import tensorflow as tf
 from tqdm import tqdm
 import time
 from Utils.mnistProcessor import process_images, format_context_points_image
-from cnpModel.new_CNP import ConditionalNeuralProcess
+from cnpModel.ConditionalNeuralProcesses import ConditionalNeuralProcess
 import os
 
 def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
@@ -37,7 +37,7 @@ def train(cnp, data, batch_size=64, max_iters=500000, convolutional=False):
     return cnp, loss, end - start
 
 
-def test_cnp(cnp, test_data, context_points=70, convolutional=False):
+def test_cnp(cnp, test_data, context_points=28*28, convolutional=False):
     # grab a random image from the test set
     image = test_data[np.random.randint(0, test_data.shape[0] + 1)].reshape(1, 28, 28)
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     save = False
     training = False
     test = True
-    attention = True
+    attention = False
     convolutional = False
     iterations = 200000
     batching = 24

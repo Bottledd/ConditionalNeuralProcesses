@@ -106,7 +106,7 @@ class GaussianProcess(object):
         y_prediction, y_prediction_std = gp.predict(x_data[-1, :], return_std=True)
         return y_prediction[np.newaxis, :], y_prediction_std[np.newaxis, :, np.newaxis]
 
-    def plot_fit(self, inputs, targets, y_pred, y_std):
+    def plot_fit(self, inputs, targets, y_pred, y_std, draw_cnp_sample=False):
         """
         Plots fit of prediction for final function in batch
         :param x_data: ndarray size '[batch_size, total_points]'
@@ -126,29 +126,34 @@ class GaussianProcess(object):
         y_pred = np.squeeze(y_pred, axis=-1)
         y_std = np.squeeze(y_std, axis=-1)
 
-        plt.figure()
+        plt.figure(figsize=(10,6))
         plt.plot(x_data[-1], y_data[-1], 'k--', label='Ground Truth')
         plt.plot(x_context[-1], y_context[-1], 'ko', label='Context')
-        plt.plot(x_data[-1], y_pred[-1], 'b-', label='GP Fit')
+        plt.plot(x_data[-1], y_pred[-1], 'b-', label='Fit')
         plt.fill_between(x_data[-1], y_pred[-1] - 1.96 * y_std[-1],
                          y_pred[-1] + 1.96 * y_std[-1],
-                         alpha=0.5, color='b')
-        # plt.fill_between(x_data[-1], y_pred[-1] - 1 * y_std[-1],
-        #                  y_pred[-1] + 1 * y_std[-1],
-        #                  alpha=0.5, color='b')
+                         alpha=0.5, color='b', label='Error Bars')
+
+        if draw_cnp_sample:
+            plt.plot(x_data[-1], sample_from_cnp(y_pred[-1], y_std[-1]), 'r--', label='Sample From CNP Posterior')
 
         # make plots look nice
         plt.xticks(np.arange(-2, 3))
         plt.yticks(np.arange(-2, 3))
         plt.ylabel('y')
         plt.xlabel('x')
+        plt.legend()
         plt.tight_layout()
+        plt.savefig("Figures/Incoherent_Samples/GP.png", dpi=300, bbox_inches='tight')
         plt.show()
 
-def sample_from_cnp(cnp, data):
-    means, stds = cnp(data.Inputs)
-    means = means.numpy().reshape(400,)
-    stds = stds.numpy().reshape(400,)
+
+def sample_from_cnp(means, stds):
+    means = means.reshape(400,)
+    stds = stds.reshape(400,)
+    random_sample = np.random.normal(loc=means, scale=stds)
+    return random_sample
+
 
 if __name__ == "__main__":
     gp_test = GaussianProcess(10,10,testing=False)

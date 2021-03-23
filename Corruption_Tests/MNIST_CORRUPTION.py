@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from Utils.imageProcessor import process_images, format_context_points_image
-from cnpModel.ConditionalNeuralProcess import ConditionalNeuralProcess
+from Utils.mnistProcessor import process_images, format_context_points_image
+from cnpModel.ConditionalNeuralProcesses import ConditionalNeuralProcess
 
 
-def test_cnp(cnp, test_data, context_points=28 * 28, convolutional=False):
+def test_cnp(cnp, test_data, context_points=28*28, convolutional=False):
     image = next(iter(test_data.take(1)))[0].numpy().reshape(1, 28, 28)
 
     # grab a random image from the test set
@@ -55,6 +55,7 @@ def test_cnp(cnp, test_data, context_points=28 * 28, convolutional=False):
 
 
 if __name__ == "__main__":
+    os.chdir("..")
     # load corrupted data set
     data, info = tfds.load(
         "mnist_corrupted",
@@ -63,15 +64,19 @@ if __name__ == "__main__":
         as_supervised=True,
         with_info=True,
     )
-    # (_, _), (data, _) = tf.keras.datasets.mnist.load_data(
-    #     path='mnist.npz'
-    # )
+    load = True
     attention = False
     convolutional = False
+    iterations = 200000
+    batching = 24
     attention_params = {}
     convolutional_params = {}
+    encoder_layer_widths = []
+    decoder_layer_widths = []
     if attention:
-        loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/ACNP_100kiterations_batch8/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400k_24B/")
+        saving_path = os.path.join(os.getcwd(), "saved_models/MNIST/ATTNCNP_400k_24B/")
+        # saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/ATTNCNP_{int(iterations / 1000)}k_{batching}B/")
         encoder_layer_widths = [128, 128]
         decoder_layer_widths = [64, 64, 64, 64, 2]
         attention_params = {"embedding_layer_width": 128, "num_heads": 8, "num_self_attention_blocks": 2}
@@ -81,10 +86,11 @@ if __name__ == "__main__":
         kernel_size_decoder = 5
         convolutional_params = {"number_filters": 128, "kernel_size_encoder": 9, "kernel_size_decoder": 5,
                                 "number_residual_blocks": 4, "convolutions_per_block": 1, "output_channels": 1}
-        pass
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/CONVCNP_100k_64B/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CONVCNP_{int(iterations / 1000)}k_{batching}B/")
     else:
-        loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/CNP_50kiterations_batch64/")
-        # loading_path = os.path.join(os.getcwd(), "..", "saved_models/ImageNET/2021_02_13-11_16_46_AM/")
+        loading_path = os.path.join(os.getcwd(), "saved_models/MNIST/CNP_100k_64B/")
+        saving_path = os.path.join(os.getcwd(), f"saved_models/MNIST/CNP_{int(iterations / 1000)}k_{batching}B/")
 
         encoder_layer_widths = [128, 128, 128]
         decoder_layer_widths = [128, 128, 128, 128, 2]
@@ -92,6 +98,7 @@ if __name__ == "__main__":
     # define the model
     cnp = ConditionalNeuralProcess(encoder_layer_widths, decoder_layer_widths, attention,
                                    attention_params=attention_params,
-                                   convolutional=convolutional, convolutional_params=convolutional_params)
+                                   convolutional=convolutional, convolutional_params=convolutional_params,
+                                   learning_rate=1e-4)
     cnp.load_weights(loading_path)
     test_cnp(cnp, data, convolutional=convolutional)
